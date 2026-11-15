@@ -1,6 +1,6 @@
 "use client";
 
-import { Area, AreaChart, CartesianGrid, ReferenceArea, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Area, AreaChart, CartesianGrid, ReferenceArea, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { cn } from "@/shared/lib/cn";
 import { TONE_CLASSES, TONE_HEX } from "@/shared/domain/status";
 import { StatusDot } from "@/shared/components/status";
@@ -30,6 +30,9 @@ export function TrendChart({ status, height = 200, compact = false }: { status: 
           <XAxis dataKey="day" hide={compact} tick={{ fontSize: 11 }} interval="preserveStartEnd" />
           <YAxis hide={compact} domain={[def.chart.min, def.chart.max]} tick={{ fontSize: 11 }} width={36} />
           <ReferenceArea y1={def.chart.bandLow} y2={def.chart.bandHigh} fill="#16a34a" fillOpacity={0.1} ifOverflow="hidden" />
+          {/* Niveles: dónde cambia el estado a atención (ámbar) o alerta (rojo). */}
+          <LevelLine y={def.chart.warnAt} band={[def.chart.bandLow, def.chart.bandHigh]} color={TONE_HEX.warn} />
+          <LevelLine y={def.chart.badAt} band={[def.chart.bandLow, def.chart.bandHigh]} color={TONE_HEX.bad} />
           <Tooltip
             cursor={{ stroke: "#94a3b8", strokeDasharray: "3 3" }}
             allowEscapeViewBox={{ x: false, y: true }}
@@ -56,6 +59,12 @@ export function TrendChart({ status, height = 200, compact = false }: { status: 
 interface TooltipProps {
   active?: boolean;
   payload?: ReadonlyArray<{ payload?: Point }>;
+}
+
+/** Línea punteada de un nivel; se omite si cae justo en el borde de la franja normal (ya se pinta de verde). */
+function LevelLine({ y, band, color }: { y?: number; band: [number, number]; color: string }) {
+  if (y === undefined || y === band[0] || y === band[1]) return null;
+  return <ReferenceLine y={y} stroke={color} strokeDasharray="4 4" strokeWidth={1.5} />;
 }
 
 /** Muestra la medición bajo el mouse: cuándo, cuánto, qué significa y el rango normal. */

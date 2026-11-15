@@ -4,19 +4,10 @@ import { PlainValue, StatusDot } from "@/shared/components/status";
 import { formatTime } from "@/shared/lib/format";
 import type { ParameterId } from "../domain/types";
 import { useHealthSummary } from "./hooks";
+import { SOURCE_LABEL } from "./source-label";
 import { TrendChart } from "./trend-chart";
 
 const VITALS: ParameterId[] = ["restingHr", "bloodPressure", "glucose", "temperature", "spo2", "sleep", "mood"];
-
-const SOURCE_LABEL: Record<string, string> = {
-  seed: "registro previo",
-  "check-in-diario": "check-in diario",
-  "test-cognitivo": "test cognitivo",
-  "cuestionario-semanal": "cuestionario semanal",
-  "escala-estres": "escala de estrés",
-  esclusa: "esclusa",
-  "registro-alimentos": "registro de alimentos",
-};
 
 /** Signos vitales (M3): cada indicador con su gráfico y la franja normal. */
 export function VitalsGrid({ astronautId }: { astronautId: string }) {

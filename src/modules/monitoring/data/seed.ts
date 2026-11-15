@@ -25,6 +25,7 @@ const SERIES: Record<string, Series> = {
     spo2: [97, 98, 97, 97, 98, 97, 98, 97, 97, 98, 97, 98, 97, 97],
     pvt: [248, 252, 250, 247, 251, 249, 253, 250, 248, 251, 249, 250, 252, 249],
     pvtLapses: [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+    stress: [14, 13, 15, 12, 14, 13, 15, 12, 13, 14, 12, 13, 14, 13],
   },
   sato: {
     sleep: [7.4, 7.2, 7.0, 7.3, 7.1, 7.2, 7.5, 7.1, 6.9, 6.6, 6.2, 5.6, 5.3, 5.4],
@@ -38,6 +39,8 @@ const SERIES: Record<string, Series> = {
     spo2: [97, 98, 97, 97, 96, 97, 98, 97, 97, 96, 97, 97, 98, 97],
     pvt: [252, 255, 250, 254, 256, 253, 258, 255, 259, 262, 260, 265, 266, 268],
     pvtLapses: [0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1, 1, 1],
+    // El estrés de Sato crece en línea con su sueño y su ánimo: hoy cruza el umbral de alerta (38).
+    stress: [21, 23, 22, 25, 24, 26, 27, 29, 30, 32, 33, 35, 37, 40],
   },
   okafor: {
     sleep: [7.2, 7.4, 7.1, 7.6, 7.3, 7.2, 7.5, 7.4, 7.1, 7.3, 7.6, 7.2, 7.4, 7.5],
@@ -51,6 +54,8 @@ const SERIES: Record<string, Series> = {
     spo2: [98, 97, 98, 98, 97, 98, 98, 97, 98, 98, 97, 98, 98, 98],
     pvt: [240, 243, 241, 238, 244, 240, 242, 239, 241, 243, 240, 242, 238, 241],
     pvtLapses: Array(14).fill(0),
+    // Okafor está en EVA: estrés moderado (al borde del umbral de atención).
+    stress: [18, 20, 19, 21, 18, 20, 19, 22, 20, 19, 21, 18, 20, 19],
   },
   varga: {
     sleep: [7.3, 7.5, 7.6, 7.2, 7.4, 7.7, 7.5, 7.3, 7.6, 7.4, 7.5, 7.6, 7.3, 7.6],
@@ -64,6 +69,7 @@ const SERIES: Record<string, Series> = {
     spo2: [97, 97, 96, 97, 97, 96, 97, 97, 96, 97, 97, 96, 97, 96],
     pvt: [258, 255, 260, 257, 259, 256, 258, 261, 257, 259, 256, 258, 260, 257],
     pvtLapses: [0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+    stress: [16, 15, 17, 14, 16, 15, 17, 14, 16, 15, 16, 14, 15, 16],
   },
 };
 
@@ -90,12 +96,23 @@ const INTAKE_SERIES: Record<string, { hydration: number[]; nutrition: number[] }
   },
 };
 
-/** Convivencia se mide una vez por semana. */
-const WEEKLY_COHESION: Record<string, [number, number]> = {
-  ortega: [4.5, 4.25],
-  sato: [4, 3.25],
-  okafor: [4.25, 4.5],
-  varga: [4.25, 4],
+/** Convivencia se mide una vez por semana: 8 semanas por tripulante (Sato viene en descenso). */
+const WEEKLY_COHESION: Record<string, number[]> = {
+  ortega: [4.5, 4.5, 4.25, 4.5, 4.25, 4.5, 4.5, 4.25],
+  sato: [4, 4, 3.75, 3.5, 3.5, 3.5, 3.25, 3.25],
+  okafor: [4.25, 4.5, 4.25, 4.5, 4.5, 4.25, 4.5, 4.5],
+  varga: [4.25, 4.25, 4, 4.25, 4, 4.25, 4, 4],
+};
+
+/**
+ * Irritación por polvo lunar (0 a 3) de los 14 días: casi todos en 0;
+ * Okafor sube al iniciar la EVA y Varga tiene sus registros de control post-salida (más abajo).
+ */
+const DUST_SERIES: Record<string, number[]> = {
+  ortega: Array(14).fill(0),
+  sato: Array(14).fill(0),
+  okafor: [0, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 2, 2],
+  varga: Array(14).fill(0),
 };
 
 function atDay(now: Date, daysAgo: number, hour = 7, minute = 15): string {
@@ -155,11 +172,27 @@ export function seedMonitoring(now = new Date()) {
         });
       });
     }
-    const [prev, last] = WEEKLY_COHESION[astronautId];
-    readings.push(
-      { id: `${astronautId}-cohesion-0`, astronautId, parameterId: "cohesion", value: prev, at: atDay(now, 7, 20), source: "seed" },
-      { id: `${astronautId}-cohesion-1`, astronautId, parameterId: "cohesion", value: last, at: atDay(now, 0, 7, 30), source: "seed" },
-    );
+    const cohesion = WEEKLY_COHESION[astronautId];
+    cohesion.forEach((value, i) => {
+      const weeksAgo = cohesion.length - 1 - i;
+      readings.push({
+        id: `${astronautId}-cohesion-${i}`,
+        astronautId,
+        parameterId: "cohesion",
+        value,
+        at: weeksAgo === 0 ? atDay(now, 0, 7, 30) : atDay(now, weeksAgo * 7, 20),
+        source: "seed",
+      });
+    });
+  }
+
+  // Irritación por polvo: baseline de 14 días; el último punto de Okafor se registra a mitad de su EVA.
+  for (const [astronautId, values] of Object.entries(DUST_SERIES)) {
+    values.forEach((value, i) => {
+      const last = i === values.length - 1;
+      const at = astronautId === "okafor" && last ? hoursFrom(now, -2) : atDay(now, values.length - 1 - i);
+      readings.push({ id: `${astronautId}-dustseed-${i}`, astronautId, parameterId: "dustIrritation", value, at, source: "seed" });
+    });
   }
 
   // Alimentación e hidratación: días anteriores como totales cerrados (21:30) y hoy a partir del registro.

@@ -45,7 +45,7 @@ export const BODY_ZONES: BodyZone[] = [
     id: "mind",
     name: "Mente y sueño",
     short: "Mente y sueño",
-    parameters: ["sleep", "mood", "cohesion", "pvt"],
+    parameters: ["sleep", "mood", "stress", "cohesion", "pvt"],
     labPanels: ["cognition", "cortisol"],
     spots: [{ x: 0, y: 20, r: 18 }],
     label: { side: "left", y: 20 },

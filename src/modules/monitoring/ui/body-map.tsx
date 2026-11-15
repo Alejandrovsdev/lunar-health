@@ -2,15 +2,20 @@
 
 import { useState, useSyncExternalStore, type KeyboardEvent, type ReactNode } from "react";
 import Link from "next/link";
+import { useAppStore } from "@/core/store";
 import { cn } from "@/shared/lib/cn";
+import { formatDay } from "@/shared/lib/format";
 import { TONE_CLASSES, TONE_HEX, TONE_LABEL, needsAttention, worstTone, type Tone } from "@/shared/domain/status";
 import { PlainValue, StatusDot, StatusPill } from "@/shared/components/status";
 import { SectionLabel } from "@/shared/components/page-header";
 import { BODY_ZONES, type BodyLabPanel, type BodyZone } from "../domain/body-zones";
 import { PARAMETERS } from "../domain/parameters";
+import { parameterStatus } from "../domain/status";
 import type { ParameterStatus, Sex } from "../domain/types";
 import { BODY_FIGURES } from "./body-figures";
 import { useAstronaut, useHealthSummary } from "./hooks";
+import { SOURCE_LABEL } from "./source-label";
+import { TrendChart } from "./trend-chart";
 
 interface ZoneState extends BodyZone {
   statuses: ParameterStatus[];
@@ -28,8 +33,15 @@ interface ZoneState extends BodyZone {
 export function BodyMap({ astronautId, labPanels = [] }: { astronautId: string; labPanels?: BodyLabPanel[] }) {
   const h = useHealthSummary(astronautId);
   const sex = useAstronaut(astronautId)?.sex ?? "female";
+  const readings = useAppStore((s) => s.readings);
+  const mine = readings.filter((r) => r.astronautId === astronautId);
+  const active = new Set(h.statuses.map((s) => s.id));
   const zones: ZoneState[] = BODY_ZONES.map((z) => {
-    const statuses = h.statuses.filter((s) => z.parameters.includes(s.id));
+    // Zona: parámetros activos del seguimiento + los que tengan lecturas propias
+    // (p. ej. irritación por polvo de quien no está en un seguimiento post-salida).
+    const statuses = z.parameters
+      .filter((id) => active.has(id) || mine.some((r) => r.parameterId === id))
+      .map((id) => parameterStatus(id, mine));
     const labs = labPanels.filter((p) => z.labPanels.includes(p.id));
     const tones = [...statuses.map((s) => s.tone), ...labs.flatMap((p) => p.rows.map((r) => r.tone))].filter((t) => t !== "pending");
     const issues = statuses.filter((s) => needsAttention(s.tone)).length + labs.flatMap((p) => p.rows).filter((r) => needsAttention(r.tone)).length;
@@ -347,15 +359,12 @@ function ZoneDetail({ zone: z, astronautId }: { zone: ZoneState; astronautId: st
         <Block title="Indicadores diarios" link={{ href: `${base}/evolucion`, label: "Ver evolución" }}>
           <div className="grid gap-3 sm:grid-cols-2">
             {z.statuses.map((s) => (
-              <div key={s.id} className={cn("flex flex-col gap-1 rounded-xl px-4 py-3", needsAttention(s.tone) ? TONE_CLASSES[s.tone].soft : "bg-muted")}>
-                <span className="flex items-center justify-between gap-2 text-sm text-muted-foreground">
-                  {s.label}
-                  <StatusDot tone={s.tone} />
-                </span>
-                <PlainValue tone={s.tone} plain={s.plain} detail={s.detail ? `${s.detail} · normal: ${s.normalText}` : `Normal: ${s.normalText}`} size="sm" />
-              </div>
+              <IndicatorCard key={s.id} status={s} />
             ))}
           </div>
+          <p className="text-xs text-muted-foreground">
+            Franja verde: normal · línea ámbar: atención · línea roja: alerta
+          </p>
         </Block>
       )}
 
@@ -399,6 +408,36 @@ function ZoneDetail({ zone: z, astronautId }: { zone: ZoneState; astronautId: st
 
 function toneRank(t: Tone) {
   return ({ ok: 0, pending: 0, info: 1, warn: 2, bad: 3 } as const)[t];
+}
+
+/**
+ * Tarjeta KPI de un indicador: valor actual en palabra simple + gráfico de evolución
+ * con la franja normal y los niveles de atención/alerta.
+ */
+function IndicatorCard({ status: s }: { status: ParameterStatus }) {
+  return (
+    <div className={cn("flex flex-col gap-2 rounded-xl px-4 py-3", needsAttention(s.tone) ? TONE_CLASSES[s.tone].soft : "bg-muted")}>
+      <span className="flex items-center justify-between gap-2 text-sm text-muted-foreground">
+        {s.label}
+        <StatusDot tone={s.tone} />
+      </span>
+      <PlainValue tone={s.tone} plain={s.plain} detail={s.detail ? `${s.detail} · normal: ${s.normalText}` : `Normal: ${s.normalText}`} size="sm" />
+      {s.history.length > 0 ? (
+        <div className="rounded-lg bg-card">
+          <TrendChart status={s} height={92} compact />
+        </div>
+      ) : (
+        <div className="flex h-[92px] items-center justify-center rounded-lg bg-card text-xs text-muted-foreground">
+          Sin datos todavía
+        </div>
+      )}
+      {s.latest && (
+        <span className="text-xs text-muted-foreground">
+          Último: {formatDay(s.latest.at)} · {SOURCE_LABEL[s.latest.source] ?? s.latest.source}
+        </span>
+      )}
+    </div>
+  );
 }
 
 function Block({ title, link, children }: { title: string; link: { href: string; label: string }; children: ReactNode }) {
