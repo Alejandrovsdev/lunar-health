@@ -9,7 +9,6 @@ import { TONE_CLASSES, TONE_HEX, TONE_LABEL, needsAttention, worstTone, type Ton
 import { PlainValue, StatusDot, StatusPill } from "@/shared/components/status";
 import { SectionLabel } from "@/shared/components/page-header";
 import { BODY_ZONES, type BodyLabPanel, type BodyZone } from "../domain/body-zones";
-import { PARAMETERS } from "../domain/parameters";
 import { parameterStatus } from "../domain/status";
 import type { ParameterStatus, Sex } from "../domain/types";
 import { BODY_FIGURES } from "./body-figures";
@@ -332,14 +331,8 @@ function Legend() {
 
 function ZoneDetail({ zone: z, astronautId }: { zone: ZoneState; astronautId: string }) {
   const base = `/astronautas/${astronautId}`;
-  const worst = [...z.statuses].sort((a, b) => toneRank(b.tone) - toneRank(a.tone))[0];
-  const labIssues = z.labs.flatMap((p) => p.rows.filter((r) => needsAttention(r.tone)).map((r) => ({ ...r, panel: p.name })));
-  const action =
-    worst && needsAttention(worst.tone)
-      ? PARAMETERS[worst.id].action[worst.tone]
-      : labIssues.length > 0
-        ? "Revisá el estudio con el oficial médico en el próximo control."
-        : null;
+  // KPIs primero los que necesitan atención: rojos, luego amarillas y por último el resto.
+  const sorted = [...z.statuses].sort((a, b) => toneRank(b.tone) - toneRank(a.tone));
 
   return (
     <section aria-live="polite" aria-label={`Detalle: ${z.name}`} className="flex flex-col gap-5 rounded-2xl border bg-card p-6">
@@ -348,29 +341,9 @@ function ZoneDetail({ zone: z, astronautId }: { zone: ZoneState; astronautId: st
         <StatusPill tone={z.tone} label={zoneStatusText(z)} className="text-sm" />
       </div>
 
-      {action && (
-        <div className={cn("flex flex-col gap-1 rounded-xl p-4", TONE_CLASSES[z.tone].soft)}>
-          <SectionLabel>Qué hacer</SectionLabel>
-          <p className="text-base font-medium">{action}</p>
-        </div>
-      )}
-
-      {z.statuses.length > 0 && (
-        <Block title="Indicadores diarios" link={{ href: `${base}/evolucion`, label: "Ver evolución" }}>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {z.statuses.map((s) => (
-              <IndicatorCard key={s.id} status={s} />
-            ))}
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Franja verde: normal · línea ámbar: atención · línea roja: alerta
-          </p>
-        </Block>
-      )}
-
       {z.labs.length > 0 && (
         <Block title="Estudios periódicos" link={{ href: `${base}/resultados`, label: "Ver estudios completos" }}>
-          <ul className="flex flex-col gap-2">
+          <ul className={cn("grid gap-2", z.labs.length > 1 ? "sm:grid-cols-2" : "")}>
             {z.labs.map((p) => {
               const out = p.rows.filter((r) => r.tone !== "ok");
               const okCount = p.rows.length - out.length;
@@ -398,6 +371,19 @@ function ZoneDetail({ zone: z, astronautId }: { zone: ZoneState; astronautId: st
               );
             })}
           </ul>
+        </Block>
+      )}
+
+      {z.statuses.length > 0 && (
+        <Block title="Indicadores diarios" link={{ href: `${base}/evolucion`, label: "Ver evolución" }}>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {sorted.map((s) => (
+              <IndicatorCard key={s.id} status={s} />
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Franja verde: normal · línea ámbar: atención · línea roja: alerta
+          </p>
         </Block>
       )}
 
