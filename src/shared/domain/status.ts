@@ -40,7 +40,7 @@ export const TONE_HEX: Record<Tone, string> = {
   pending: "#6b7280",
 };
 
-/** Niveles de escalamiento (M11 del documento del equipo). */
+/** Niveles de escalamiento: autocuidado → tripulación (oficial médico a bordo) → médico de vuelo en Tierra (con demora de comunicación). */
 export const ESCALATION_LEVELS = ["Autocuidado", "Avisar a la tripulación", "Flight surgeon en Tierra"] as const;
 export type EscalationLevel = 0 | 1 | 2;
 

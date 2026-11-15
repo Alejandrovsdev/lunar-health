@@ -7,6 +7,7 @@ import { isSameDay } from "@/shared/lib/format";
 import { Button } from "@/shared/ui/button";
 import { ChoiceGroup, YesNo } from "@/shared/ui/form";
 import { PlainValue } from "@/shared/components/status";
+import { CrewAvatar } from "@/shared/components/avatar";
 import { BalanceTest, PvtTest, scorePvt } from "@/modules/assessments";
 import { evaluateCheckOut } from "../domain/rules";
 import type { CheckOutForm } from "../domain/types";
@@ -80,7 +81,7 @@ export function CheckOutWizard({ astronautId }: { astronautId: string }) {
             legend="Compañero/a de salida"
             value={f.partnerId || null}
             onChange={(v) => patch({ partnerId: v })}
-            options={partners.map((p) => ({ value: p.id, label: p.name, sublabel: p.role }))}
+            options={partners.map((p) => ({ value: p.id, label: p.name, sublabel: p.role, media: <CrewAvatar name={p.name} photo={p.photo} tone="info" className="size-12 ring-2 ring-offset-1" /> }))}
           />
           <ChoiceGroup name="dest" legend="Destino" value={f.destination} onChange={(v) => patch({ destination: v })} options={DESTINATIONS.map((d) => ({ value: d, label: d }))} columns={2} />
           <ChoiceGroup

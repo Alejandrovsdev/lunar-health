@@ -28,11 +28,14 @@ export function AirlockHome() {
           <h2 className="text-4xl font-bold">Check-out</h2>
           <div className="flex flex-col gap-2">
             {scheduledFirst(inside).map((a) => (
-              <div key={a.id} className="flex items-center justify-between gap-3 rounded-xl bg-muted px-4 py-3">
-                <span className="flex flex-col">
-                  <span className="text-lg font-semibold">{a.name}</span>
-                  <span className="text-sm text-muted-foreground">
-                    {a.nextEva ? `Salida programada ${new Date(a.nextEva.at).toLocaleString("es-AR", { weekday: "short", hour: "2-digit", minute: "2-digit" })}` : a.role}
+              <div key={a.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-muted px-4 py-3">
+                <span className="flex items-center gap-3">
+                  <CrewAvatar name={a.name} photo={a.photo} tone="info" className="size-12 ring-2 ring-offset-1 ring-offset-muted" />
+                  <span className="flex flex-col">
+                    <span className="text-lg font-semibold">{a.name}</span>
+                    <span className="text-sm text-muted-foreground">
+                      {a.nextEva ? `Salida programada ${new Date(a.nextEva.at).toLocaleString("es-AR", { weekday: "short", hour: "2-digit", minute: "2-digit" })}` : a.role}
+                    </span>
                   </span>
                 </span>
                 <Button asChild size="lg" variant={a.nextEva ? "default" : "outline"}>

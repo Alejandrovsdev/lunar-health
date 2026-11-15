@@ -6,7 +6,7 @@ import { Footprints, House } from "lucide-react";
 import { cn } from "@/shared/lib/cn";
 import { formatDuration, formatNumber } from "@/shared/lib/format";
 import { useNow } from "@/shared/lib/use-now";
-import { TONE_CLASSES, TONE_LABEL, TONE_RANK, needsAttention, type Tone } from "@/shared/domain/status";
+import { TONE_CLASSES, TONE_LABEL, TONE_RANK, type Tone } from "@/shared/domain/status";
 import { LiveBadge, PlainValue, StatusDot, StatusPill } from "@/shared/components/status";
 import { CrewAvatar } from "@/shared/components/avatar";
 import { useAppStore } from "@/core/store";
@@ -84,7 +84,6 @@ export function CrewBoard() {
   const groups = groupAndSort(triage);
   return (
     <section aria-label="Tripulación" className="flex flex-col gap-8">
-      <CrewSummary items={triage} />
       <div className={cn("hidden gap-6 px-6 text-xs font-semibold uppercase tracking-wider text-muted-foreground lg:grid", LG_COLS)}>
         <span>Astronauta</span>
         <span>Estado</span>
@@ -97,54 +96,6 @@ export function CrewBoard() {
       <p className="text-xs text-muted-foreground">
         Fotos: NASA (dominio público). Nombres y datos de salud ficticios; no representan a las personas retratadas.
       </p>
-    </section>
-  );
-}
-
-/**
- * Respuesta de 5 segundos: ¿alguien necesita algo ahora? Quién, por qué y qué hacer.
- * El detalle sigue en las filas de abajo; esto evita tener que recorrerlas.
- */
-function CrewSummary({ items }: { items: Triage[] }) {
-  const urgent = items.filter((t) => needsAttention(t.tone)).sort((x, y) => TONE_RANK[y.tone] - TONE_RANK[x.tone]);
-  const worst: Tone = urgent[0]?.tone ?? "ok";
-  const tc = TONE_CLASSES[worst];
-  const count = (tone: Tone) => items.filter((t) => t.tone === tone).length;
-  const normal = items.length - urgent.length;
-  return (
-    <section aria-label="Resumen de la tripulación" className={cn("flex flex-col gap-4 rounded-2xl border-2 p-5", urgent.length ? cn(tc.border, tc.soft) : "border-ok bg-ok-soft")}>
-      <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-        <h2 className={cn("text-2xl font-bold", urgent.length ? tc.strong : "text-ok-strong")}>
-          {urgent.length === 0
-            ? "Toda la tripulación en rango"
-            : `${urgent.length} de ${items.length} ${urgent.length === 1 ? "necesita" : "necesitan"} atención`}
-        </h2>
-        <span className="flex flex-wrap gap-2">
-          {count("bad") > 0 && <StatusPill tone="bad" label={`${count("bad")} en alerta`} />}
-          {count("warn") > 0 && <StatusPill tone="warn" label={`${count("warn")} en atención`} />}
-          {normal > 0 && <StatusPill tone="ok" label={`${normal} ${normal === 1 ? "normal" : "normales"}`} />}
-        </span>
-      </div>
-      {urgent.length > 0 && (
-        <ol className="flex flex-col gap-2">
-          {urgent.map((t) => (
-            <li key={t.astronaut.id}>
-              <Link
-                href={`/astronautas/${t.astronaut.id}`}
-                className="grid items-center gap-x-4 gap-y-1 rounded-xl bg-card px-4 py-3 hover:ring-2 hover:ring-primary sm:grid-cols-[auto_minmax(0,1fr)_auto]"
-              >
-                <span className="flex items-center gap-3">
-                  <StatusPill tone={t.tone} />
-                  <span className="font-display text-lg font-semibold">{t.astronaut.name}</span>
-                  {t.kind === "exterior" && <span className="text-xs font-semibold text-muted-foreground">EN EVA</span>}
-                </span>
-                <span className="text-sm">{reasonOf(t)}</span>
-                <span className={cn("text-sm font-semibold", TONE_CLASSES[t.tone].strong)}>{actionOf(t)} →</span>
-              </Link>
-            </li>
-          ))}
-        </ol>
-      )}
     </section>
   );
 }
@@ -234,22 +185,14 @@ function InteriorRow({ t }: { t: Extract<Triage, { kind: "interior" }> }) {
             {measured}/{measured} en rango
           </span>
         ) : (
-          <>
-            <span className={cn("flex min-w-24 flex-col items-center rounded-xl px-3 py-2", TONE_CLASSES[tone].soft, TONE_CLASSES[tone].strong)}>
-              <span className="font-display text-3xl font-bold leading-none">
-                {n}
-                <span className="text-lg"> / {h.total}</span>
-              </span>
-              <span className="text-xs font-semibold">a atender</span>
+          // Solo el indicador: el detalle de cada parámetro está en la ficha (la fila entera es el enlace).
+          <span className={cn("flex min-w-24 flex-col items-center rounded-xl px-3 py-2", TONE_CLASSES[tone].soft, TONE_CLASSES[tone].strong)}>
+            <span className="font-display text-3xl font-bold leading-none">
+              {n}
+              <span className="text-lg"> / {h.total}</span>
             </span>
-            <span className="flex flex-1 flex-wrap gap-1.5">
-              {h.attention.map((s) => (
-                <span key={s.id} className={cn("rounded-full px-2.5 py-1 text-sm font-semibold", TONE_CLASSES[s.tone].soft, TONE_CLASSES[s.tone].strong)}>
-                  {s.label} · {s.plain.toLowerCase()}
-                </span>
-              ))}
-            </span>
-          </>
+            <span className="text-xs font-semibold">a atender</span>
+          </span>
         )}
         {(h.followUpCount > 0 || h.missing.length > 0 || a.nextEva) && (
           <span className="flex basis-full flex-col gap-0.5">

@@ -21,7 +21,7 @@ export const TESTS: TestDefinition[] = [
     frequency: "daily",
     frequencyLabel: "Todas las mañanas",
     category: "fisiológico",
-    nasaReference: "Documento del equipo (tabla 3.2) · Standard Measures: actigrafía y bioquímica",
+    nasaReference: "Referencias clínicas generales · Standard Measures: actigrafía y bioquímica",
   },
   {
     id: "pvt",

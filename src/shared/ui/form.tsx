@@ -57,6 +57,8 @@ export interface ChoiceOption<T extends string | number> {
   value: T;
   label: string;
   sublabel?: string;
+  /** Imagen o ícono arriba del texto (p. ej. la foto de la persona). */
+  media?: React.ReactNode;
 }
 
 interface ChoiceGroupProps<T extends string | number> {
@@ -87,6 +89,7 @@ export function ChoiceGroup<T extends string | number>({ name, legend, options, 
               )}
             >
               <input id={id} type="radio" name={name} className="sr-only" checked={checked} onChange={() => onChange(opt.value)} />
+              {opt.media && <span className="mb-1">{opt.media}</span>}
               <span className="text-base font-semibold">{opt.label}</span>
               {opt.sublabel && <span className="text-xs text-muted-foreground">{opt.sublabel}</span>}
             </label>
