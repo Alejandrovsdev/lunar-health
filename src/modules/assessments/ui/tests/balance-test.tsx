@@ -4,19 +4,29 @@ import { useEffect, useRef, useState } from "react";
 import { useAppStore } from "@/core/store";
 import { Button } from "@/shared/ui/button";
 import type { AssessmentResult } from "../../domain/types";
+import { useSpeech } from "../use-speech";
 
 const SECONDS = 30;
 
 /** Equilibrio: 30 s en un pie con los ojos cerrados (Standard Measures: sensoriomotor). */
 export function BalanceTest({ astronautId, onDone }: { astronautId: string; onDone: (r: AssessmentResult) => void }) {
   const submit = useAppStore((s) => s.submitBalance);
+  const speech = useSpeech();
   const [phase, setPhase] = useState<"idle" | "run" | "ask">("idle");
   const [left, setLeft] = useState(SECONDS);
+  const [voiceOn, setVoiceOn] = useState(true);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => () => {
     if (timer.current) clearInterval(timer.current);
   }, []);
+
+  // La cuenta se lee en voz alta con el mismo número que se muestra (ojos cerrados: no se puede mirar).
+  useEffect(() => {
+    if (!voiceOn) return;
+    if (phase === "run") speech.speak(left === SECONDS ? `Ojos cerrados, aguantá. ${left}` : String(left));
+    if (phase === "ask") speech.speak("Tiempo. ¿Pudiste mantener el equilibrio? Opciones: Sí, sin apoyar el pie. Apoyé el pie.");
+  }, [phase, left]);
 
   const start = () => {
     setPhase("run");
@@ -40,7 +50,17 @@ export function BalanceTest({ astronautId, onDone }: { astronautId: string; onDo
           {phase === "idle" ? "Equilibrio en un pie" : phase === "run" ? "Ojos cerrados, aguantá" : "¿Pudiste mantener el equilibrio?"}
         </span>
         <span className="font-display text-8xl font-bold text-primary">{left}</span>
-        {phase === "idle" && <Button size="xl" onClick={start}>Empezar</Button>}
+        {phase === "idle" && (
+          <div className="flex flex-wrap items-center justify-center gap-4">
+            <Button size="xl" onClick={start}>
+              Empezar
+            </Button>
+            <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground">
+              <input type="checkbox" checked={voiceOn} onChange={(e) => setVoiceOn(e.target.checked)} className="size-4 accent-primary" />
+              Leer la cuenta en voz alta
+            </label>
+          </div>
+        )}
         {phase === "ask" && (
           <div className="flex gap-3">
             <Button size="xl" onClick={() => onDone(submit(astronautId, true))}>Sí, sin apoyar el pie</Button>
