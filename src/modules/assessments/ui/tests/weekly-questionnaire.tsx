@@ -15,12 +15,41 @@ import {
   isWeeklyComplete,
 } from "../../domain/scoring";
 import type { AssessmentResult, WeeklyAnswers } from "../../domain/types";
+import { GuidedFlow, type GuidedSection } from "../guided-flow";
+import { useSpeech } from "../use-speech";
+import { VoiceSetup } from "../voice-setup";
 
 const STEPS = ["PANAS: emociones 1 a 10", "PANAS: emociones 11 a 20", "Salud general", "Convivencia y equipo"] as const;
+
+/** A qué grupo de respuestas pertenece cada ítem (ids únicos entre grupos). */
+const GROUP_OF: Record<string, keyof WeeklyAnswers> = {
+  ...Object.fromEntries(PANAS_ITEMS.map((i) => [i.id, "panas"])),
+  ...Object.fromEntries(GENERAL_HEALTH_ITEMS.map((i) => [i.id, "ghq"])),
+  ...Object.fromEntries(TEAM_ITEMS.map((i) => [i.id, "team"])),
+};
+
+const GUIDED_SECTIONS: GuidedSection<number>[] = [
+  {
+    options: PANAS_SCALE,
+    questions: PANAS_ITEMS.map((i) => ({ id: i.id, text: `Durante la última semana, ¿en qué medida te sentiste ${i.label.charAt(0).toLowerCase()}${i.label.slice(1)}?` })),
+  },
+  {
+    intro: "En los últimos 7 días…",
+    options: FREQUENCY_SCALE,
+    questions: GENERAL_HEALTH_ITEMS.map((i) => ({ id: i.id, text: i.label })),
+  },
+  {
+    intro: "¿Qué tan de acuerdo estás con estas afirmaciones sobre la convivencia en la base? Tus respuestas son privadas: solo vos y el oficial médico ven el detalle.",
+    options: AGREEMENT_SCALE,
+    questions: TEAM_ITEMS.map((i) => ({ id: i.id, text: i.label })),
+  },
+];
 
 /** Cuestionario semanal (psicológico): PANAS completo, salud general y convivencia. */
 export function WeeklyQuestionnaire({ astronautId, onDone }: { astronautId: string; onDone: (r: AssessmentResult) => void }) {
   const submit = useAppStore((s) => s.submitWeekly);
+  const speech = useSpeech();
+  const [mode, setMode] = useState<"start" | "manual" | "guided">("start");
   const [step, setStep] = useState(0);
   const [a, setA] = useState<WeeklyAnswers>({ panas: {}, ghq: {}, team: {} });
   const put = (group: keyof WeeklyAnswers, id: string) => (v: number) => setA((p) => ({ ...p, [group]: { ...p[group], [id]: v } }));
@@ -32,6 +61,32 @@ export function WeeklyQuestionnaire({ astronautId, onDone }: { astronautId: stri
       : step === 2
         ? GENERAL_HEALTH_ITEMS.every((i) => a.ghq[i.id] != null)
         : TEAM_ITEMS.every((i) => a.team[i.id] != null);
+
+  if (mode === "start") {
+    return (
+      <VoiceSetup
+        title="Cuestionario semanal"
+        description="PANAS (20 emociones), salud general y convivencia: 29 preguntas en total. Con voz, cada pregunta se lee sola y avanzás con un clic."
+        meta="Se repite una vez por semana · tus respuestas son privadas"
+        speech={speech}
+        onStart={setMode}
+      />
+    );
+  }
+
+  if (mode === "guided") {
+    return (
+      <GuidedFlow
+        sections={GUIDED_SECTIONS}
+        getValue={(id) => a[GROUP_OF[id]][id] ?? null}
+        onAnswer={(id, v) => put(GROUP_OF[id], id)(v)}
+        isComplete={() => isWeeklyComplete(a)}
+        onComplete={() => onDone(submit(astronautId, a))}
+        submitLabel="Enviar cuestionario"
+        speech={speech}
+      />
+    );
+  }
 
   return (
     <div className="flex flex-col gap-5">
