@@ -12,14 +12,15 @@ export type DailyParameterId =
   | "spo2"
   | "pvt"
   | "hydration"
-  | "nutrition";
+  | "nutrition"
+  | "stress";
 
 /** Parámetros que solo existen mientras hay un seguimiento post-salida activo. */
 export type FollowUpParameterId = "decompression" | "dustIrritation";
 
 export type ParameterId = DailyParameterId | FollowUpParameterId;
 
-export type ReadingSource = "seed" | "check-in-diario" | "test-cognitivo" | "cuestionario-semanal" | "esclusa" | "registro-alimentos";
+export type ReadingSource = "seed" | "check-in-diario" | "test-cognitivo" | "cuestionario-semanal" | "escala-estres" | "esclusa" | "registro-alimentos";
 
 export interface Reading {
   id: string;

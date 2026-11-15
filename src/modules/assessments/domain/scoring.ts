@@ -1,5 +1,5 @@
 import type { Tone } from "@/shared/domain/status";
-import type { WeeklyAnswers } from "./types";
+import type { StressAnswers, WeeklyAnswers } from "./types";
 
 /* ---------- PVT (vigilancia psicomotora) ---------- */
 
@@ -16,26 +16,40 @@ export function scorePvt(times: number[], falseStarts: number) {
 
 /* ---------- Cuestionario semanal ---------- */
 
-/** PANAS breve internacional (10 adjetivos). Escala 1–5. */
+/**
+ * PANAS completo (Watson, Clark & Tellegen, 1988): 20 adjetivos, 10 de afecto
+ * positivo (1, 3, 5, 9, 10, 12, 14, 16, 17, 19) y 10 de afecto negativo.
+ * Escala 1–5 durante la última semana.
+ */
 export const PANAS_ITEMS = [
+  { id: "interesado", label: "Interesado/a", positive: true },
+  { id: "angustiado", label: "Angustiado/a", positive: false },
+  { id: "excitado", label: "Excitado/a", positive: true },
+  { id: "molesto", label: "Molesto/a", positive: false },
+  { id: "fuerte", label: "Fuerte", positive: true },
+  { id: "culpable", label: "Culpable", positive: false },
+  { id: "asustado", label: "Asustado/a", positive: false },
+  { id: "hostil", label: "Hostil", positive: false },
+  { id: "entusiasmado", label: "Entusiasmado/a", positive: true },
+  { id: "orgulloso", label: "Orgulloso/a", positive: true },
+  { id: "irritable", label: "Irritable", positive: false },
   { id: "alerta", label: "Alerta", positive: true },
+  { id: "avergonzado", label: "Avergonzado/a", positive: false },
   { id: "inspirado", label: "Inspirado/a", positive: true },
+  { id: "nervioso", label: "Nervioso/a", positive: false },
   { id: "decidido", label: "Decidido/a", positive: true },
   { id: "atento", label: "Atento/a", positive: true },
+  { id: "inquieto", label: "Inquieto/a", positive: false },
   { id: "activo", label: "Activo/a", positive: true },
-  { id: "molesto", label: "Molesto/a", positive: false },
-  { id: "hostil", label: "Hostil", positive: false },
-  { id: "avergonzado", label: "Avergonzado/a", positive: false },
-  { id: "nervioso", label: "Nervioso/a", positive: false },
-  { id: "asustado", label: "Asustado/a", positive: false },
+  { id: "temeroso", label: "Temeroso/a", positive: false },
 ] as const;
 
 export const PANAS_SCALE = [
-  { value: 1, label: "Nada" },
-  { value: 2, label: "Poco" },
-  { value: 3, label: "Algo" },
+  { value: 1, label: "Muy poco o nada" },
+  { value: 2, label: "Un poco" },
+  { value: 3, label: "Moderadamente" },
   { value: 4, label: "Bastante" },
-  { value: 5, label: "Mucho" },
+  { value: 5, label: "Extremadamente" },
 ];
 
 /**
@@ -81,12 +95,55 @@ export function isWeeklyComplete(a: WeeklyAnswers) {
   );
 }
 
+/* ---------- Escala de Estrés Percibido (PSS-14) ---------- */
+
+/**
+ * PSS-14, versión española de E. Remor. Escala 0–4.
+ * Los ítems 4, 5, 6, 7, 9, 10 y 13 se invierten antes de sumar.
+ * Bandas orientativas: 0–18 bajo, 19–37 moderado, 38–56 alto. No es un diagnóstico.
+ */
+export const PSS_ITEMS = [
+  { id: "pss1", label: "En el último mes, ¿con qué frecuencia ha estado afectado por algo que ha ocurrido inesperadamente?", reverse: false },
+  { id: "pss2", label: "En el último mes, ¿con qué frecuencia se ha sentido incapaz de controlar las cosas importantes en su vida?", reverse: false },
+  { id: "pss3", label: "En el último mes, ¿con qué frecuencia se ha sentido nervioso o estresado?", reverse: false },
+  { id: "pss4", label: "En el último mes, ¿con qué frecuencia ha manejado con éxito los pequeños problemas irritantes de la vida?", reverse: true },
+  { id: "pss5", label: "En el último mes, ¿con qué frecuencia ha sentido que ha afrontado efectivamente los cambios importantes que han estado ocurriendo en su vida?", reverse: true },
+  { id: "pss6", label: "En el último mes, ¿con qué frecuencia ha estado seguro sobre su capacidad para manejar sus problemas personales?", reverse: true },
+  { id: "pss7", label: "En el último mes, ¿con qué frecuencia ha sentido que las cosas le van bien?", reverse: true },
+  { id: "pss8", label: "En el último mes, ¿con qué frecuencia ha sentido que no podía afrontar todas las cosas que tenía que hacer?", reverse: false },
+  { id: "pss9", label: "En el último mes, ¿con qué frecuencia ha podido controlar las dificultades de su vida?", reverse: true },
+  { id: "pss10", label: "En el último mes, ¿con qué frecuencia se ha sentido que tenía todo bajo control?", reverse: true },
+  { id: "pss11", label: "En el último mes, ¿con qué frecuencia ha estado enfadado porque las cosas que le han ocurrido estaban fuera de su control?", reverse: false },
+  { id: "pss12", label: "En el último mes, ¿con qué frecuencia ha pensado sobre las cosas que le quedan por hacer?", reverse: false },
+  { id: "pss13", label: "En el último mes, ¿con qué frecuencia ha podido controlar la forma de pasar el tiempo?", reverse: true },
+  { id: "pss14", label: "En el último mes, ¿con qué frecuencia ha sentido que las dificultades se acumulan tanto que no puede superarlas?", reverse: false },
+] as const;
+
+export const PSS_SCALE = [
+  { value: 0, label: "Nunca" },
+  { value: 1, label: "Casi nunca" },
+  { value: 2, label: "De vez en cuando" },
+  { value: 3, label: "A menudo" },
+  { value: 4, label: "Muy a menudo" },
+];
+
+export function isStressComplete(a: StressAnswers) {
+  return PSS_ITEMS.every((i) => a[i.id] != null);
+}
+
+export function scoreStress(a: StressAnswers) {
+  const total = PSS_ITEMS.reduce((s, i) => s + (i.reverse ? 4 - (a[i.id] ?? 0) : (a[i.id] ?? 0)), 0);
+  const tone: Tone = total >= 38 ? "bad" : total >= 19 ? "warn" : "ok";
+  const plain = tone === "ok" ? "Bajo" : tone === "warn" ? "Moderado" : "Alto";
+  return { total, tone, plain };
+}
+
 export function scoreWeekly(a: WeeklyAnswers) {
   const positive = PANAS_ITEMS.filter((i) => i.positive).reduce((s, i) => s + (a.panas[i.id] ?? 0), 0);
   const negative = PANAS_ITEMS.filter((i) => !i.positive).reduce((s, i) => s + (a.panas[i.id] ?? 0), 0);
   const generalHealth = GENERAL_HEALTH_ITEMS.reduce((s, i) => s + (a.ghq[i.id] ?? 0), 0);
   const cohesion = TEAM_ITEMS.reduce((s, i) => s + (a.team[i.id] ?? 0), 0) / TEAM_ITEMS.length;
-  const emotionalTone: Tone = negative >= 18 || generalHealth >= 10 ? "bad" : negative >= 13 || generalHealth >= 6 || positive <= 12 ? "warn" : "ok";
+  const emotionalTone: Tone = negative >= 36 || generalHealth >= 10 ? "bad" : negative >= 26 || generalHealth >= 6 || positive <= 24 ? "warn" : "ok";
   return {
     positive,
     negative,

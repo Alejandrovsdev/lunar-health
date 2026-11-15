@@ -6,7 +6,7 @@ export interface TestDefinition {
   title: string;
   description: string;
   minutes: number;
-  frequency: "daily" | "weekly" | "pre-eva";
+  frequency: "daily" | "weekly" | "monthly" | "pre-eva";
   frequencyLabel: string;
   category: "fisiológico" | "cognitivo" | "psicológico" | "sensoriomotor";
   nasaReference: string;
@@ -36,12 +36,22 @@ export const TESTS: TestDefinition[] = [
   {
     id: "weekly",
     title: "Cuestionario semanal",
-    description: "Cómo te sentiste (PANAS breve), salud general y convivencia con la tripulación.",
-    minutes: 5,
+    description: "PANAS completo (20 emociones), salud general y convivencia con la tripulación.",
+    minutes: 7,
     frequency: "weekly",
     frequencyLabel: "Una vez por semana",
     category: "psicológico",
-    nasaReference: "Standard Measures · PANAS, GHQ y cuestionario de sueño y equipo",
+    nasaReference: "Standard Measures · PANAS de Watson, Clark & Tellegen (1988), GHQ y cuestionario de sueño y equipo",
+  },
+  {
+    id: "stress",
+    title: "Estrés percibido (PSS-14)",
+    description: "14 preguntas sobre cómo te sentiste en el último mes: estrés percibido y capacidad de afrontamiento.",
+    minutes: 3,
+    frequency: "monthly",
+    frequencyLabel: "Una vez por mes",
+    category: "psicológico",
+    nasaReference: "Cohen, Kamarck & Mermelstein (1983) · Perceived Stress Scale (PSS-14), adaptación española de E. Remor",
   },
   {
     id: "balance",

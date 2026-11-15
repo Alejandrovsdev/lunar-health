@@ -7,6 +7,7 @@ import { PvtTest } from "./tests/pvt-test";
 import { BalanceTest } from "./tests/balance-test";
 import { DailyCheckInTest } from "./tests/daily-check-in";
 import { WeeklyQuestionnaire } from "./tests/weekly-questionnaire";
+import { StressTest } from "./tests/stress-test";
 
 export interface TestComponentProps {
   astronautId: string;
@@ -19,6 +20,7 @@ export const TEST_COMPONENTS: Record<TestId, ComponentType<TestComponentProps>> 
   pvt: PvtTest,
   balance: BalanceTest,
   weekly: WeeklyQuestionnaire,
+  stress: StressTest,
 };
 
 export function TestRunner({ astronautId, testId }: { astronautId: string; testId: TestId }) {

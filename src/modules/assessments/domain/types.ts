@@ -1,6 +1,6 @@
 import type { Tone } from "@/shared/domain/status";
 
-export type TestId = "daily" | "pvt" | "balance" | "weekly";
+export type TestId = "daily" | "pvt" | "balance" | "weekly" | "stress";
 
 export interface AssessmentResult {
   id: string;
@@ -29,3 +29,5 @@ export interface WeeklyAnswers {
   ghq: Record<string, number>;
   team: Record<string, number>;
 }
+
+export type StressAnswers = Record<string, number>;
