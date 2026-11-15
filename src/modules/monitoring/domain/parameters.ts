@@ -5,7 +5,7 @@ import type { Evaluation, ParameterId, Reading, DailyParameterId } from "./types
 
 /**
  * Catálogo de parámetros.
- * Umbrales: tabla 3.2 del documento del equipo (referencias clínicas generales, a validar).
+ * Umbrales: referencias clínicas generales, a validar. Tabla completa con fuentes: docs/umbrales-y-fuentes.md.
  * Fuentes NASA: Standard Measures (nlsp.nasa.gov) y riesgos HRP.
  */
 export interface ParameterDefinition {
@@ -167,7 +167,7 @@ export const PARAMETERS: Record<ParameterId, ParameterDefinition> = {
     chart: { min: 35, max: 39, bandLow: 36.1, bandHigh: 37.2 },
     why: "En el espacio el sistema inmune cambia y pueden reactivarse virus dormidos.",
     action: { warn: "Repetí la medición en 2 h y anotá si tenés otros síntomas.", bad: "Avisá al oficial médico ahora." },
-    source: "Documento del equipo (tabla 3.2) · riesgo HRP: sistema inmune",
+    source: "Referencia clínica general · riesgo HRP: sistema inmune",
     how: "Termómetro, cargado a mano",
   },
   spo2: {
@@ -180,7 +180,7 @@ export const PARAMETERS: Record<ParameterId, ParameterDefinition> = {
     chart: { min: 85, max: 100, bandLow: 95, bandHigh: 100 },
     why: "El hábitat trabaja a menor presión (8,2 psi) y eso puede causar hipoxia leve, parecida al mal de altura.",
     action: { warn: "Repetí en reposo. Si sigue bajo, avisá antes de cualquier salida.", bad: "Avisá al oficial médico ahora." },
-    source: "Documento del equipo (tabla 3.2) · riesgo HRP: hipoxia",
+    source: "Referencia clínica general · riesgo HRP: hipoxia (hábitat a 8,2 psi)",
     how: "Oxímetro de dedo",
   },
   pvt: {

@@ -21,9 +21,10 @@ export default function MapPage({ params }: { params: Promise<{ id: string }> })
         <EvaMap progress={position.progress} name={astronaut.name} />
         <div className="flex flex-wrap gap-5 px-2 text-xs text-muted-foreground">
           <span>━ azul: recorrido hecho</span>
-          <span>┅ gris: ruta planificada</span>
+          <span>┅ blanco: ruta planificada</span>
           <span>┅ naranja: hasta dónde puede alejarse y volver a tiempo</span>
-          <span>Pasá el mouse por una parada para ver su objetivo</span>
+          <span>Pasá el mouse por una parada (o llegá con Tab) para ver su objetivo y una foto</span>
+          <span>Imagen real del orbitador LRO (NASA); la base, la ruta y las paradas son de la simulación</span>
         </div>
       </section>
       <aside className="flex flex-col gap-3">

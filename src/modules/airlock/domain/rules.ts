@@ -4,7 +4,7 @@ import type { AirlockVerdict, CheckInForm, CheckOutForm, Finding, VitalsInput } 
 
 /**
  * Reglas de la esclusa. Son propuestas para la demo y deben validarse con el equipo médico.
- * Fuentes: riesgos HRP (descompresión, EVA, hipoxia) y umbrales de la tabla 3.2.
+ * Fuentes: riesgos HRP (descompresión, EVA, hipoxia) y los umbrales de la base (docs/umbrales-y-fuentes.md).
  */
 
 function vitalsFindings(v: VitalsInput): Finding[] {
