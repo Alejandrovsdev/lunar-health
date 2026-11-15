@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { cn } from "@/shared/lib/cn";
 import { formatTime } from "@/shared/lib/format";
 import { TONE_CLASSES } from "@/shared/domain/status";
@@ -19,10 +20,16 @@ export function InteriorProfile({ astronautId }: { astronautId: string }) {
   const h = useHealthSummary(astronautId);
   const followUp = useActiveFollowUp(astronautId);
   const [selected, setSelected] = useState(0);
-  const list = h.attention.length ? h.attention : h.inRange.slice(0, 1);
+  // Sin nada a atender, el detalle muestra el primer parámetro con dato (o cualquiera si todavía no hay datos).
+  const list = h.attention.length ? h.attention : (h.inRange.length ? h.inRange : h.statuses).slice(0, 1);
   const current = list[Math.min(selected, list.length - 1)];
   const def = PARAMETERS[current.id];
   const tc = TONE_CLASSES[h.attention.length ? h.tone : "ok"];
+  // Lo que falta se completa donde se registra: comidas e hidratación en Alimentación, el resto con los tests.
+  const onlyIntake = h.missing.every((s) => s.id === "hydration" || s.id === "nutrition");
+  const register = onlyIntake
+    ? { href: `/astronautas/${astronautId}/alimentacion`, label: "Registrar en Alimentación →" }
+    : { href: `/tests/${astronautId}`, label: "Completar los tests de hoy →" };
 
   return (
     <div className="flex flex-col gap-5">
@@ -31,6 +38,11 @@ export function InteriorProfile({ astronautId }: { astronautId: string }) {
           {h.attention.length} de {h.total} parámetros a atender
         </span>
         <span className="text-base">{h.attention.length ? "Tocá cada uno para ver su evolución y qué hacer." : "Todo en rango. Seguí con tu rutina."}</span>
+        {h.missing.length > 0 && (
+          <Link href={register.href} className="text-sm font-semibold text-primary hover:underline">
+            {h.missing.length} sin datos hoy · {register.label}
+          </Link>
+        )}
       </section>
 
       {followUp && (
@@ -47,7 +59,7 @@ export function InteriorProfile({ astronautId }: { astronautId: string }) {
       {h.attention.length > 0 && (
         <section aria-label="Parámetros a atender" className="flex flex-col gap-2">
           <SectionLabel>A atender ({h.attention.length})</SectionLabel>
-          <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${Math.max(3, h.attention.length)}, minmax(0, 1fr))` }}>
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-3">
             {h.attention.map((s, i) => (
               <button
                 key={s.id}
@@ -103,6 +115,21 @@ export function InteriorProfile({ astronautId }: { astronautId: string }) {
           </span>
         ))}
       </section>
+
+      {h.missing.length > 0 && (
+        <section aria-label="Parámetros sin datos" className="flex flex-wrap items-center gap-2">
+          <SectionLabel>Sin datos hoy ({h.missing.length})</SectionLabel>
+          {h.missing.map((s) => (
+            <span key={s.id} className="inline-flex items-center gap-1.5 rounded-full border border-dashed bg-muted px-3 py-1.5 text-sm text-muted-foreground">
+              <StatusDot tone="pending" />
+              {s.label}
+            </span>
+          ))}
+          <Link href={register.href} className="text-sm font-semibold text-primary hover:underline">
+            {register.label}
+          </Link>
+        </section>
+      )}
     </div>
   );
 }

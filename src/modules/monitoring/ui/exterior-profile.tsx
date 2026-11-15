@@ -4,10 +4,10 @@ import Link from "next/link";
 import { formatNumber } from "@/shared/lib/format";
 import { cn } from "@/shared/lib/cn";
 import { TONE_CLASSES } from "@/shared/domain/status";
-import { ConsumableRings, EvaTimeline, SuitChartCard, useSuit } from "@/modules/telemetry";
+import { ConsumableRings, EvaTimeline, RadiationCard, SuitChartCard, useSuit } from "@/modules/telemetry";
 import type { Astronaut } from "../domain/types";
 
-/** Ficha de un astronauta en EVA: telemetría del traje en tiempo real. */
+/** Ficha de un astronauta en EVA: telemetría del traje en tiempo real (signos, radiación y consumibles). */
 export function ExteriorProfile({ astronaut }: { astronaut: Astronaut }) {
   const live = useSuit(astronaut.eva);
   if (!live) return null;
@@ -36,6 +36,8 @@ export function ExteriorProfile({ astronaut }: { astronaut: Astronaut }) {
           <SuitChartCard key={c.id} channel={c} />
         ))}
       </section>
+
+      <RadiationCard radiation={snapshot.radiation} priorMissionMSv={astronaut.radiationMSv} />
 
       <section aria-label="Recursos del traje">
         <ConsumableRings items={snapshot.consumables} />

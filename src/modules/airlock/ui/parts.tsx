@@ -7,14 +7,15 @@ import { EscalationLadder } from "@/shared/components/escalation-ladder";
 import { NumberField } from "@/shared/ui/form";
 import type { AirlockVerdict, VitalsInput } from "../domain/types";
 
-export function VitalsFields<T extends VitalsInput>({ form, onChange }: { form: T; onChange: (patch: Partial<VitalsInput>) => void }) {
+/** `idPrefix` evita ids repetidos cuando hay dos formularios en pantalla (check-in del equipo). */
+export function VitalsFields<T extends VitalsInput>({ form, onChange, idPrefix = "" }: { form: T; onChange: (patch: Partial<VitalsInput>) => void; idPrefix?: string }) {
   return (
     <div className="grid gap-4 md:grid-cols-2">
-      <NumberField id="spo2" label="Oxígeno en sangre" unit="%" value={form.spo2} onChange={(v) => onChange({ spo2: v })} hint="Normal: 95 % o más" />
-      <NumberField id="hr" label="Pulso" unit="lpm" value={form.restingHr} onChange={(v) => onChange({ restingHr: v })} hint="Normal en reposo: 60 a 100" />
-      <NumberField id="sys" label="Presión: número de arriba" unit="mmHg" value={form.systolic} onChange={(v) => onChange({ systolic: v })} />
-      <NumberField id="dia" label="Presión: número de abajo" unit="mmHg" value={form.diastolic} onChange={(v) => onChange({ diastolic: v })} hint="Normal: menos de 120/80" />
-      <NumberField id="temp" label="Temperatura" unit="°C" step={0.1} value={form.temperature} onChange={(v) => onChange({ temperature: v })} hint="Normal: 36,1 a 37,2 °C" />
+      <NumberField id={`${idPrefix}spo2`} label="Oxígeno en sangre" unit="%" value={form.spo2} onChange={(v) => onChange({ spo2: v })} hint="Normal: 95 % o más" />
+      <NumberField id={`${idPrefix}hr`} label="Pulso" unit="lpm" value={form.restingHr} onChange={(v) => onChange({ restingHr: v })} hint="Normal en reposo: 60 a 100" />
+      <NumberField id={`${idPrefix}sys`} label="Presión: número de arriba" unit="mmHg" value={form.systolic} onChange={(v) => onChange({ systolic: v })} />
+      <NumberField id={`${idPrefix}dia`} label="Presión: número de abajo" unit="mmHg" value={form.diastolic} onChange={(v) => onChange({ diastolic: v })} hint="Normal: menos de 120/80" />
+      <NumberField id={`${idPrefix}temp`} label="Temperatura" unit="°C" step={0.1} value={form.temperature} onChange={(v) => onChange({ temperature: v })} hint="Normal: 36,1 a 37,2 °C" />
     </div>
   );
 }

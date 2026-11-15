@@ -1,123 +1,305 @@
 "use client";
 
+import { useMemo } from "react";
 import Link from "next/link";
+import { Footprints, House } from "lucide-react";
 import { cn } from "@/shared/lib/cn";
 import { formatDuration, formatNumber } from "@/shared/lib/format";
-import { TONE_CLASSES, TONE_LABEL } from "@/shared/domain/status";
+import { useNow } from "@/shared/lib/use-now";
+import { TONE_CLASSES, TONE_LABEL, TONE_RANK, needsAttention, type Tone } from "@/shared/domain/status";
 import { LiveBadge, PlainValue, StatusDot, StatusPill } from "@/shared/components/status";
-import { useSuit } from "@/modules/telemetry";
-import type { Astronaut } from "../domain/types";
-import { useAstronauts, useHealthSummary } from "./hooks";
+import { CrewAvatar } from "@/shared/components/avatar";
+import { useAppStore } from "@/core/store";
+import { evaPosition, suitSnapshot, type SuitSnapshot } from "@/modules/telemetry";
+import type { Astronaut, Location } from "../domain/types";
+import { summarizeHealth, type HealthSummary } from "../domain/status";
+import { LOCATION_LABEL, LOCATION_ORDER } from "../domain/location";
+import { useAstronauts } from "./hooks";
+import { basicFactsLine } from "./astronaut-facts";
 
 /** Clase literal para que Tailwind la detecte. */
-const LG_COLS = "lg:grid-cols-[minmax(180px,1.1fr)_120px_minmax(200px,1.2fr)_minmax(0,2.6fr)_minmax(160px,1fr)]";
+const LG_COLS = "lg:grid-cols-[minmax(240px,1.25fr)_minmax(190px,1fr)_minmax(0,2.4fr)_minmax(170px,1fr)]";
+
+type Triage =
+  | { kind: "interior"; astronaut: Astronaut; tone: Tone; health: HealthSummary }
+  | { kind: "exterior"; astronaut: Astronaut; tone: Tone; snapshot: SuitSnapshot; distanceKm: number; partner?: Astronaut };
+
+/**
+ * Estado de cada astronauta calculado a nivel del tablero, para poder agrupar y ordenar.
+ * Hábitat: parámetros diarios + seguimiento post-salida. EVA: telemetría del traje en vivo (cada segundo).
+ */
+function useCrewTriage(): Triage[] {
+  const astronauts = useAstronauts();
+  const readings = useAppStore((s) => s.readings);
+  const followUps = useAppStore((s) => s.followUps);
+  const now = useNow(1000);
+
+  const interior = useMemo(
+    () => new Map(astronauts.filter((a) => a.location === "interior").map((a) => [a.id, summarizeHealth(a.id, readings, followUps)])),
+    [astronauts, readings, followUps],
+  );
+
+  return astronauts.flatMap<Triage>((a) => {
+    if (a.location === "exterior") {
+      if (!a.eva) return [];
+      const snapshot = suitSnapshot(a.eva.startedAt, now, a.eva.plannedHours, a.eva.suitVariant);
+      const { distanceKm } = evaPosition(snapshot.elapsedS, a.eva.plannedHours);
+      const partner = astronauts.find((p) => p.id === a.eva?.partnerId);
+      return [{ kind: "exterior", astronaut: a, tone: snapshot.alert?.tone ?? "ok", snapshot, distanceKm, partner }];
+    }
+    const health = interior.get(a.id)!;
+    return [{ kind: "interior", astronaut: a, tone: health.tone, health }];
+  });
+}
+
+/** Agrupa por ubicación (EVA primero) y ordena por gravedad. Sort estable: con igual estado se respeta el orden original. */
+function groupAndSort(items: Triage[]) {
+  return LOCATION_ORDER.map((location) => ({
+    location,
+    items: items.filter((t) => t.astronaut.location === location).sort((x, y) => TONE_RANK[y.tone] - TONE_RANK[x.tone]),
+  })).filter((g) => g.items.length > 0);
+}
+
+/** Motivo en una línea: lo que hay que saber de esta persona ahora. */
+function reasonOf(t: Triage): string {
+  if (t.kind === "interior") return t.health.headline;
+  return t.snapshot.alert ? t.snapshot.alert.text.split(".")[0] : "Todo en rango";
+}
+
+/** Próximo paso concreto. Siempre hay uno, también cuando todo está bien. */
+function actionOf(t: Triage): string {
+  if (t.kind === "exterior") {
+    if (!t.snapshot.alert) return "Seguir con el plan";
+    const rest = t.snapshot.alert.text.split(".").slice(1).join(".").trim();
+    return rest || TONE_LABEL[t.tone];
+  }
+  const h = t.health;
+  if (h.attention.length > 0) return t.tone === "bad" ? "Avisar a la tripulación" : "Seguir las indicaciones de su ficha";
+  if (h.missing.length > 0) return "Completar los registros de hoy";
+  return "Seguir con la rutina";
+}
 
 export function CrewBoard() {
-  const astronauts = useAstronauts();
+  const triage = useCrewTriage();
+  const groups = groupAndSort(triage);
   return (
-    <section aria-label="Tripulación" className="flex flex-col gap-4">
+    <section aria-label="Tripulación" className="flex flex-col gap-8">
+      <CrewSummary items={triage} />
       <div className={cn("hidden gap-6 px-6 text-xs font-semibold uppercase tracking-wider text-muted-foreground lg:grid", LG_COLS)}>
         <span>Astronauta</span>
-        <span>Dónde está</span>
         <span>Estado</span>
         <span>Parámetros</span>
         <span>Qué hacer</span>
       </div>
-      {astronauts.map((a) => (a.location === "exterior" ? <ExteriorRow key={a.id} astronaut={a} /> : <InteriorRow key={a.id} astronaut={a} />))}
+      {groups.map((g) => (
+        <CrewGroup key={g.location} location={g.location} items={g.items} />
+      ))}
+      <p className="text-xs text-muted-foreground">
+        Fotos: NASA (dominio público). Nombres y datos de salud ficticios; no representan a las personas retratadas.
+      </p>
     </section>
   );
 }
 
-function Who({ a }: { a: Astronaut }) {
+/**
+ * Respuesta de 5 segundos: ¿alguien necesita algo ahora? Quién, por qué y qué hacer.
+ * El detalle sigue en las filas de abajo; esto evita tener que recorrerlas.
+ */
+function CrewSummary({ items }: { items: Triage[] }) {
+  const urgent = items.filter((t) => needsAttention(t.tone)).sort((x, y) => TONE_RANK[y.tone] - TONE_RANK[x.tone]);
+  const worst: Tone = urgent[0]?.tone ?? "ok";
+  const tc = TONE_CLASSES[worst];
+  const count = (tone: Tone) => items.filter((t) => t.tone === tone).length;
+  const normal = items.length - urgent.length;
   return (
-    <span className="flex flex-col">
-      <span className="font-display text-xl font-semibold">{a.name}</span>
-      <span className="text-sm text-muted-foreground">{a.role}</span>
+    <section aria-label="Resumen de la tripulación" className={cn("flex flex-col gap-4 rounded-2xl border-2 p-5", urgent.length ? cn(tc.border, tc.soft) : "border-ok bg-ok-soft")}>
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+        <h2 className={cn("text-2xl font-bold", urgent.length ? tc.strong : "text-ok-strong")}>
+          {urgent.length === 0
+            ? "Toda la tripulación en rango"
+            : `${urgent.length} de ${items.length} ${urgent.length === 1 ? "necesita" : "necesitan"} atención`}
+        </h2>
+        <span className="flex flex-wrap gap-2">
+          {count("bad") > 0 && <StatusPill tone="bad" label={`${count("bad")} en alerta`} />}
+          {count("warn") > 0 && <StatusPill tone="warn" label={`${count("warn")} en atención`} />}
+          {normal > 0 && <StatusPill tone="ok" label={`${normal} ${normal === 1 ? "normal" : "normales"}`} />}
+        </span>
+      </div>
+      {urgent.length > 0 && (
+        <ol className="flex flex-col gap-2">
+          {urgent.map((t) => (
+            <li key={t.astronaut.id}>
+              <Link
+                href={`/astronautas/${t.astronaut.id}`}
+                className="grid items-center gap-x-4 gap-y-1 rounded-xl bg-card px-4 py-3 hover:ring-2 hover:ring-primary sm:grid-cols-[auto_minmax(0,1fr)_auto]"
+              >
+                <span className="flex items-center gap-3">
+                  <StatusPill tone={t.tone} />
+                  <span className="font-display text-lg font-semibold">{t.astronaut.name}</span>
+                  {t.kind === "exterior" && <span className="text-xs font-semibold text-muted-foreground">EN EVA</span>}
+                </span>
+                <span className="text-sm">{reasonOf(t)}</span>
+                <span className={cn("text-sm font-semibold", TONE_CLASSES[t.tone].strong)}>{actionOf(t)} →</span>
+              </Link>
+            </li>
+          ))}
+        </ol>
+      )}
+    </section>
+  );
+}
+
+function CrewGroup({ location, items }: { location: Location; items: Triage[] }) {
+  const label = LOCATION_LABEL[location];
+  const Icon = location === "exterior" ? Footprints : House;
+  const bad = items.filter((t) => t.tone === "bad").length;
+  const warn = items.filter((t) => t.tone === "warn").length;
+  const headingId = `crew-group-${location}`;
+  return (
+    <section aria-labelledby={headingId} className="flex flex-col gap-3">
+      <header className="flex flex-wrap items-center gap-3 border-b pb-2">
+        <span className="flex size-9 items-center justify-center rounded-full bg-secondary text-secondary-foreground">
+          <Icon aria-hidden className="size-5" />
+        </span>
+        <h2 id={headingId} className="text-xl font-semibold">
+          {label.group}
+        </h2>
+        <span className="text-sm text-muted-foreground">
+          {items.length} {items.length === 1 ? "astronauta" : "astronautas"}
+        </span>
+        <span className="ml-auto flex gap-2">
+          {bad > 0 && <StatusPill tone="bad" label={`${bad} en alerta`} />}
+          {warn > 0 && <StatusPill tone="warn" label={`${warn} en atención`} />}
+          {bad === 0 && warn === 0 && <StatusPill tone="ok" label="Todo normal" />}
+        </span>
+      </header>
+      <div className="flex flex-col gap-3">
+        {items.map((t) => (t.kind === "exterior" ? <ExteriorRow key={t.astronaut.id} t={t} /> : <InteriorRow key={t.astronaut.id} t={t} />))}
+      </div>
+    </section>
+  );
+}
+
+/** Borde según gravedad: crítico = rojo grueso que late; atención = ámbar fijo; normal = sin énfasis. */
+function rowFrame(tone: Tone) {
+  if (tone === "bad") return "border-2 border-l-8 border-bad bg-bad-soft/40 motion-safe:animate-alert-pulse";
+  if (tone === "warn") return "border-2 border-l-8 border-warn bg-warn-soft/30";
+  // Sin franja: se compensa el padding izquierdo para que fotos y columnas queden alineadas con las filas con franja.
+  return "border bg-card pl-[27px] lg:pl-[31px]";
+}
+
+const ROW = cn("grid min-h-28 grid-cols-1 items-center gap-4 rounded-2xl p-5 transition-colors lg:gap-6 lg:p-6", LG_COLS);
+
+function Who({ a, tone, live, nameAsLink }: { a: Astronaut; tone: Tone; live?: boolean; nameAsLink?: boolean }) {
+  return (
+    <span className="flex items-center gap-4">
+      <CrewAvatar name={a.name} photo={a.photo} tone={tone} />
+      <span className="flex min-w-0 flex-col gap-1">
+        {tone === "bad" && <span className="sr-only">Alerta crítica.</span>}
+        {nameAsLink ? (
+          // El enlace se estira a toda la tarjeta (after:inset-0): no se pueden anidar <a>, y la fila tiene el botón de Mapa.
+          <Link
+            href={`/astronautas/${a.id}`}
+            className="font-display text-xl font-semibold after:absolute after:inset-0 after:rounded-2xl after:content-[''] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring"
+          >
+            {a.name}
+          </Link>
+        ) : (
+          <span className="font-display text-xl font-semibold">{a.name}</span>
+        )}
+        <span className="text-sm text-muted-foreground">{a.role}</span>
+        {basicFactsLine(a) && <span className="text-xs text-muted-foreground">{basicFactsLine(a)}</span>}
+        {live && <LiveBadge label="EN VIVO · traje" />}
+      </span>
     </span>
   );
 }
 
-function Where({ a }: { a: Astronaut }) {
-  return (
-    <span className="w-fit rounded-full bg-secondary px-3 py-1 text-sm font-semibold text-secondary-foreground">
-      {a.location === "exterior" ? "Exterior" : "Interior"}
-    </span>
-  );
-}
-
-function InteriorRow({ astronaut: a }: { astronaut: Astronaut }) {
-  const h = useHealthSummary(a.id);
+function InteriorRow({ t }: { t: Extract<Triage, { kind: "interior" }> }) {
+  const { astronaut: a, health: h, tone } = t;
   const n = h.attention.length;
-  const countTone = n === 0 ? "ok" : h.tone;
-  const action = h.attention[0] ? (h.tone === "bad" ? "Avisar a la tripulación" : "Seguir las indicaciones de su ficha") : "—";
+  const measured = h.total - h.missing.length;
+  const action = actionOf(t);
   return (
-    <Link
-      href={`/astronautas/${a.id}`}
-      className={cn("grid grid-cols-1 items-center gap-4 rounded-2xl border bg-card p-5 transition-colors hover:border-primary lg:gap-6", LG_COLS)}
-    >
-      <Who a={a} />
-      <Where a={a} />
+    <Link href={`/astronautas/${a.id}`} className={cn(ROW, rowFrame(tone), "hover:border-primary")}>
+      <Who a={a} tone={tone} />
       <span className="flex flex-col items-start gap-1.5">
-        <StatusPill tone={h.tone} />
+        <StatusPill tone={tone} />
         <span className="text-sm">{h.headline}</span>
       </span>
       <span className="flex flex-wrap items-center gap-4">
-        <span className={cn("flex min-w-28 flex-col items-center rounded-xl px-4 py-2", TONE_CLASSES[countTone].soft, TONE_CLASSES[countTone].strong)}>
-          <span className="font-display text-4xl font-bold leading-none">
-            {n}
-            <span className="text-xl"> / {h.total}</span>
+        {n === 0 ? (
+          <span className="flex items-center gap-2 text-sm font-semibold text-ok-strong">
+            <StatusDot tone="ok" />
+            {measured}/{measured} en rango
           </span>
-          <span className="text-xs font-semibold">a atender</span>
-        </span>
-        <span className="flex flex-1 flex-col gap-1.5">
-          <span className="flex flex-wrap gap-1.5">
-            {n === 0 ? (
-              <span className="font-semibold text-ok-strong">Todo en rango</span>
-            ) : (
-              h.attention.map((s) => (
+        ) : (
+          <>
+            <span className={cn("flex min-w-24 flex-col items-center rounded-xl px-3 py-2", TONE_CLASSES[tone].soft, TONE_CLASSES[tone].strong)}>
+              <span className="font-display text-3xl font-bold leading-none">
+                {n}
+                <span className="text-lg"> / {h.total}</span>
+              </span>
+              <span className="text-xs font-semibold">a atender</span>
+            </span>
+            <span className="flex flex-1 flex-wrap gap-1.5">
+              {h.attention.map((s) => (
                 <span key={s.id} className={cn("rounded-full px-2.5 py-1 text-sm font-semibold", TONE_CLASSES[s.tone].soft, TONE_CLASSES[s.tone].strong)}>
                   {s.label} · {s.plain.toLowerCase()}
                 </span>
-              ))
+              ))}
+            </span>
+          </>
+        )}
+        {(h.followUpCount > 0 || h.missing.length > 0 || a.nextEva) && (
+          <span className="flex basis-full flex-col gap-0.5">
+            {h.missing.length > 0 && (
+              <span className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+                <StatusDot tone="pending" className="size-2" />
+                Sin datos hoy: {h.missing.map((s) => s.label.toLowerCase()).join(", ")}
+              </span>
+            )}
+            {h.followUpCount > 0 && <span className="text-xs text-muted-foreground">Incluye {h.followUpCount} de seguimiento post-salida</span>}
+            {a.nextEva && (
+              <span className="text-xs text-muted-foreground">
+                Próxima EVA: {new Date(a.nextEva.at).toLocaleString("es-AR", { weekday: "short", hour: "2-digit", minute: "2-digit" })}
+              </span>
             )}
           </span>
-          {h.total > 10 && <span className="text-xs text-muted-foreground">Incluye {h.total - 10} de seguimiento post-salida</span>}
-          {a.nextEva && <span className="text-xs text-muted-foreground">Próxima salida: {new Date(a.nextEva.at).toLocaleString("es-AR", { weekday: "short", hour: "2-digit", minute: "2-digit" })}</span>}
-        </span>
+        )}
       </span>
-      <span className="text-sm font-medium">{action}</span>
+      <span className={cn("text-sm font-semibold", tone === "bad" && "text-bad-strong", tone === "ok" && "font-normal text-muted-foreground")}>{action}</span>
     </Link>
   );
 }
 
-function ExteriorRow({ astronaut: a }: { astronaut: Astronaut }) {
-  const live = useSuit(a.eva);
-  if (!live) return null;
-  const { snapshot, position } = live;
-  const tone = snapshot.alert?.tone ?? "ok";
+function ExteriorRow({ t }: { t: Extract<Triage, { kind: "exterior" }> }) {
+  const { astronaut: a, snapshot, distanceKm, tone, partner } = t;
   const [pressure, hr, temp] = snapshot.channels;
+  const headline = reasonOf(t);
+  const action = actionOf(t);
+  const rad = snapshot.radiation;
+  const tiles = [
+    ...[pressure, hr, temp].map((c) => ({ id: c.id, label: c.label, tone: c.tone, plain: c.plain, detail: `${formatNumber(c.value, c.decimals)} ${c.unit}` })),
+    ...(rad ? [{ id: "radiation", label: "Radiación", tone: rad.tone, plain: rad.plain, detail: `${formatNumber(rad.rateUSvH)} µSv/h` }] : []),
+  ];
   return (
-    <div className={cn("grid grid-cols-1 items-center gap-4 rounded-2xl border-2 border-primary bg-card p-5 lg:gap-6", LG_COLS)}>
-      <span className="flex flex-col gap-1">
-        <Link href={`/astronautas/${a.id}`} className="font-display text-xl font-semibold hover:underline">
-          {a.name}
-        </Link>
-        <span className="text-sm text-muted-foreground">{a.role}</span>
-        <LiveBadge label="EN VIVO · traje" />
-      </span>
-      <Where a={a} />
+    <div className={cn(ROW, rowFrame(tone), "relative cursor-pointer hover:border-primary")}>
+      <Who a={a} tone={tone} live nameAsLink />
       <span className="flex flex-col items-start gap-1.5">
         <StatusPill tone={tone} />
-        <span className="text-sm">{snapshot.alert ? snapshot.alert.text.split(".")[0] : "Todo en rango"}</span>
-        <span className="text-xs text-muted-foreground">Volver en {formatDuration(snapshot.returnAtS - snapshot.elapsedS)}</span>
+        <span className="text-sm">{headline}</span>
+        <span className="text-xs text-muted-foreground">
+          {partner && <>Con {partner.name} · </>}Volver en {formatDuration(snapshot.returnAtS - snapshot.elapsedS)}
+        </span>
       </span>
-      <span className="grid grid-cols-3 gap-2">
-        {[pressure, hr, temp].map((c) => (
-          <span key={c.id} className="flex flex-col gap-0.5 rounded-xl bg-muted px-3 py-2">
+      <span className="grid grid-cols-2 gap-2 xl:grid-cols-4">
+        {tiles.map((c) => (
+          <span key={c.id} className={cn("flex flex-col gap-0.5 rounded-xl px-3 py-2", c.tone === "ok" ? "bg-muted" : TONE_CLASSES[c.tone].soft)}>
             <span className="text-xs text-muted-foreground">{c.label}</span>
             <span className="flex items-center gap-2">
               <StatusDot tone={c.tone} />
-              <PlainValue tone={c.tone} size="sm" plain={c.plain} detail={`${formatNumber(c.value, c.decimals)} ${c.unit}`} />
+              <PlainValue tone={c.tone} size="sm" plain={c.plain} detail={c.detail} />
             </span>
           </span>
         ))}
@@ -125,11 +307,11 @@ function ExteriorRow({ astronaut: a }: { astronaut: Astronaut }) {
       <span className="flex flex-col items-start gap-2">
         <Link
           href={`/astronautas/${a.id}/mapa`}
-          className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+          className="relative z-10 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
         >
-          {formatNumber(position.distanceKm, 2)} km · Mapa →
+          {formatNumber(distanceKm, 2)} km · Mapa →
         </Link>
-        <span className="text-sm font-medium">{snapshot.alert ? snapshot.alert.text.split(".").slice(1).join(".").trim() || TONE_LABEL[tone] : "Seguir con el plan"}</span>
+        <span className={cn("text-sm font-semibold", tone === "bad" && "text-bad-strong")}>{action}</span>
       </span>
     </div>
   );

@@ -4,7 +4,7 @@ import { use, type ReactNode } from "react";
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/shared/components/page-header";
 import { LiveBadge } from "@/shared/components/status";
-import { AstronautNav, useAstronaut } from "@/modules/monitoring";
+import { AstronautFacts, AstronautNav, LOCATION_LABEL, useAstronaut } from "@/modules/monitoring";
 import { usePendingTestsCount } from "@/modules/assessments";
 
 /** Composición de la ficha: cabecera + navegación. Une monitoring (información) con assessments (tests). */
@@ -26,12 +26,13 @@ export default function AstronautLayout({ children, params }: { children: ReactN
         }
         right={
           <span className="rounded-full bg-secondary px-4 py-2 text-sm font-semibold text-secondary-foreground">
-            {outside ? "Exterior · en EVA" : "Interior · en la base"} · {astronaut.role}
+            {LOCATION_LABEL[astronaut.location].detail} · {astronaut.role}
           </span>
         }
       />
+      <AstronautFacts astronaut={astronaut} />
+      <AstronautNav astronautId={id} location={astronaut.location} pendingTests={pending} />
       {children}
-      {!outside && <AstronautNav astronautId={id} pendingTests={pending} />}
     </div>
   );
 }

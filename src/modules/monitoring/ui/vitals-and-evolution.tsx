@@ -14,6 +14,7 @@ const SOURCE_LABEL: Record<string, string> = {
   "test-cognitivo": "test cognitivo",
   "cuestionario-semanal": "cuestionario semanal",
   esclusa: "esclusa",
+  "registro-alimentos": "registro de alimentos",
 };
 
 /** Signos vitales (M3): cada indicador con su gráfico y la franja normal. */

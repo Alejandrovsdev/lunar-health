@@ -11,7 +11,7 @@ export default function AstronautTestsPage({ params }: { params: Promise<{ astro
   if (!astronaut) return null;
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader back={{ href: `/astronautas/${astronautId}`, label: "Mi estado" }} title={`Tests de hoy · ${astronaut.name}`} />
+      <PageHeader back={{ href: `/astronautas/${astronautId}`, label: `Ficha de ${astronaut.name}` }} title={`Tests de hoy · ${astronaut.name}`} />
       <TestsHub astronautId={astronautId} />
     </div>
   );

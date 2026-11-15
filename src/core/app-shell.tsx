@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { cn } from "@/shared/lib/cn";
 import { Button } from "@/shared/ui/button";
+import { MISSION_CONTEXT } from "@/shared/components/page-header";
 import { StoreHydration } from "./hydration";
 import { useAppStore } from "./store";
 
@@ -36,7 +37,8 @@ export function AppShell({ children }: { children: ReactNode }) {
             ))}
           </nav>
           <div className="ml-auto flex items-center gap-3">
-            <span className="hidden text-xs text-muted-foreground md:inline">Demo · datos simulados</span>
+            <span className="hidden text-xs text-muted-foreground xl:inline">{MISSION_CONTEXT}</span>
+            <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">Demo · datos simulados</span>
             <ResetDemo />
           </div>
         </div>

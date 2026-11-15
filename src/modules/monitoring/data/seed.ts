@@ -1,10 +1,14 @@
+import { dayKey } from "@/shared/domain/intake-day";
+import { energyTarget } from "@/modules/nutrition/domain/targets";
+import { intakeDayReadings } from "@/modules/nutrition/domain/readings";
+import { seedIntakeLog } from "@/modules/nutrition/data/seed";
 import type { Astronaut, DailyParameterId, FollowUp, Reading } from "../domain/types";
 
 /**
  * Datos de demo. Todos los nombres y valores son ficticios.
  * Se generan relativos a "ahora" para que la demo siempre esté vigente.
  */
-type Series = Partial<Record<DailyParameterId, number[]>> & { bloodPressureDia?: number[]; pvtLapses?: number[] };
+type Series = Partial<Record<Exclude<DailyParameterId, "hydration" | "nutrition">, number[]>> & { bloodPressureDia?: number[]; pvtLapses?: number[] };
 
 const DAYS = 14;
 
@@ -63,6 +67,29 @@ const SERIES: Record<string, Series> = {
   },
 };
 
+/**
+ * Hidratación (mL) y alimentación (% de la meta de calorías) de los 13 días anteriores a hoy (de hace 13 días a ayer).
+ * Hoy sale del registro de alimentos. Sato viene tomando menos agua y comiendo de menos (coherente con su sueño y su estrés).
+ */
+const INTAKE_SERIES: Record<string, { hydration: number[]; nutrition: number[] }> = {
+  ortega: {
+    hydration: [2450, 2380, 2600, 2300, 2520, 2410, 2350, 2580, 2470, 2390, 2620, 2440, 2510],
+    nutrition: [98, 102, 96, 100, 104, 97, 99, 101, 95, 103, 98, 100, 97],
+  },
+  sato: {
+    hydration: [2350, 2400, 2280, 2300, 2200, 2150, 2100, 2050, 1950, 1900, 1850, 1800, 1750],
+    nutrition: [97, 95, 99, 94, 96, 93, 92, 90, 91, 88, 89, 87, 86],
+  },
+  okafor: {
+    hydration: [2500, 2600, 2450, 2700, 2550, 2480, 2620, 2590, 2510, 2680, 2470, 2560, 2640],
+    nutrition: [101, 99, 103, 98, 100, 102, 97, 104, 99, 101, 100, 98, 102],
+  },
+  varga: {
+    hydration: [2300, 2250, 2400, 2350, 2280, 2420, 2310, 2260, 2380, 2330, 2290, 2400, 2350],
+    nutrition: [96, 99, 97, 100, 98, 95, 101, 97, 99, 96, 100, 98, 97],
+  },
+};
+
 /** Convivencia se mide una vez por semana. */
 const WEEKLY_COHESION: Record<string, [number, number]> = {
   ortega: [4.5, 4.25],
@@ -84,9 +111,13 @@ function hoursFrom(now: Date, hours: number): string {
 
 export function seedMonitoring(now = new Date()) {
   const astronauts: Astronaut[] = [
-    { id: "ortega", name: "L. Ortega", role: "Comandante", location: "interior" },
+    { id: "ortega", photo: "/crew/ortega.jpg", sex: "male", massKg: 78, radiationMSv: 21.4, name: "L. Ortega", role: "Comandante", location: "interior" },
     {
       id: "sato",
+      photo: "/crew/sato.jpg",
+      sex: "female",
+      massKg: 58,
+      radiationMSv: 19.8,
       name: "M. Sato",
       role: "Ingeniera de superficie",
       location: "interior",
@@ -94,12 +125,16 @@ export function seedMonitoring(now = new Date()) {
     },
     {
       id: "okafor",
+      photo: "/crew/okafor.jpg",
+      sex: "female",
+      massKg: 64,
+      radiationMSv: 23.6,
       name: "A. Okafor",
       role: "Geóloga",
       location: "exterior",
       eva: { startedAt: hoursFrom(now, -(3 + 20 / 60)), destination: "Borde del cráter", plannedHours: 6 },
     },
-    { id: "varga", name: "J. Varga", role: "Oficial médico", location: "interior" },
+    { id: "varga", photo: "/crew/varga.jpg", sex: "male", massKg: 82, radiationMSv: 22.1, name: "J. Varga", role: "Oficial médico", location: "interior" },
   ];
 
   const readings: Reading[] = [];
@@ -126,6 +161,24 @@ export function seedMonitoring(now = new Date()) {
       { id: `${astronautId}-cohesion-1`, astronautId, parameterId: "cohesion", value: last, at: atDay(now, 0, 7, 30), source: "seed" },
     );
   }
+
+  // Alimentación e hidratación: días anteriores como totales cerrados (21:30) y hoy a partir del registro.
+  for (const a of astronauts) {
+    const series = INTAKE_SERIES[a.id];
+    if (!series) continue;
+    const kcalTarget = energyTarget(a.sex, a.massKg);
+    series.hydration.forEach((value, i) => {
+      const at = atDay(now, series.hydration.length - i, 21, 30);
+      readings.push({ id: `${a.id}-hydration-${i}`, astronautId: a.id, parameterId: "hydration", value, at, source: "seed" });
+    });
+    series.nutrition.forEach((value, i) => {
+      const at = atDay(now, series.nutrition.length - i, 21, 30);
+      const kcal = Math.round(((value / 100) * kcalTarget) / 10) * 10;
+      readings.push({ id: `${a.id}-nutrition-${i}`, astronautId: a.id, parameterId: "nutrition", value, value2: kcal, at, source: "seed" });
+    });
+  }
+  const intakeLog = seedIntakeLog(now);
+  for (const a of astronauts) readings.push(...intakeDayReadings(a, intakeLog, dayKey(now)).upsert);
 
   // Varga volvió de una salida hace 3 h: seguimiento post-salida activo.
   const returnedAt = hoursFrom(now, -3);

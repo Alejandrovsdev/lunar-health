@@ -23,7 +23,7 @@ export function PageHeader({
           </Link>
         )}
         <h1 className="text-3xl font-bold">{title}</h1>
-        <p className="text-sm text-muted-foreground">{subtitle ?? MISSION_CONTEXT}</p>
+        {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
       </div>
       {right && <div className="flex flex-wrap items-center gap-2">{right}</div>}
     </header>

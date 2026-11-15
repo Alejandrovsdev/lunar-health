@@ -47,6 +47,14 @@
     0%, 100% { opacity: 1; }
     50% { opacity: 0.25; }
   }
+
+  /* Fila en alerta crítica: halo rojo que late. Se usa con motion-safe: (respeta "reducir movimiento"). */
+  --animate-alert-pulse: alert-pulse 1.4s ease-out infinite;
+  @keyframes alert-pulse {
+    0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-bad) 55%, transparent); }
+    70% { box-shadow: 0 0 0 10px color-mix(in srgb, var(--color-bad) 0%, transparent); }
+    100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-bad) 0%, transparent); }
+  }
 }
 
 :root {

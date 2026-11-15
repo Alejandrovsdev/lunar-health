@@ -70,7 +70,8 @@ export function CheckOutWizard({ astronautId }: { astronautId: string }) {
     {
       id: "plan",
       title: "Plan de la salida",
-      subtitle: "Confirmá con quién salís, a dónde y por cuánto tiempo. Las salidas son siempre en pareja.",
+      // NASA: las EVA de Artemis se hacen en parejas ("buddy pairs") para responder juntos a contingencias.
+      subtitle: "Confirmá con quién salís, a dónde y por cuánto tiempo. Las salidas son siempre en pareja: es la norma de NASA para EVA, para poder asistirse ante una emergencia.",
       valid: f.partnerId !== "" && f.destination !== "",
       content: (
         <>

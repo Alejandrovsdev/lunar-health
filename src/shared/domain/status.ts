@@ -23,12 +23,12 @@ export function needsAttention(tone: Tone): boolean {
 }
 
 /** Clases de Tailwind por estado (definidas en globals.css). */
-export const TONE_CLASSES: Record<Tone, { soft: string; strong: string; dot: string; border: string }> = {
-  ok: { soft: "bg-ok-soft", strong: "text-ok-strong", dot: "bg-ok", border: "border-ok" },
-  warn: { soft: "bg-warn-soft", strong: "text-warn-strong", dot: "bg-warn", border: "border-warn" },
-  bad: { soft: "bg-bad-soft", strong: "text-bad-strong", dot: "bg-bad", border: "border-bad" },
-  info: { soft: "bg-info-soft", strong: "text-info-strong", dot: "bg-info", border: "border-info" },
-  pending: { soft: "bg-muted", strong: "text-muted-foreground", dot: "bg-gray-400", border: "border-gray-400" },
+export const TONE_CLASSES: Record<Tone, { soft: string; strong: string; dot: string; border: string; ring: string }> = {
+  ok: { soft: "bg-ok-soft", strong: "text-ok-strong", dot: "bg-ok", border: "border-ok", ring: "ring-ok" },
+  warn: { soft: "bg-warn-soft", strong: "text-warn-strong", dot: "bg-warn", border: "border-warn", ring: "ring-warn" },
+  bad: { soft: "bg-bad-soft", strong: "text-bad-strong", dot: "bg-bad", border: "border-bad", ring: "ring-bad" },
+  info: { soft: "bg-info-soft", strong: "text-info-strong", dot: "bg-info", border: "border-info", ring: "ring-info" },
+  pending: { soft: "bg-muted", strong: "text-muted-foreground", dot: "bg-gray-400", border: "border-gray-400", ring: "ring-gray-400" },
 };
 
 /** Colores hex para gráficos (Recharts no lee clases). */

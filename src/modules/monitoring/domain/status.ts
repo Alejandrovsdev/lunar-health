@@ -21,9 +21,16 @@ export function parameterStatus(id: ParameterId, readings: Reading[]): Parameter
 
 export interface HealthSummary {
   statuses: ParameterStatus[];
+  /** Fuera de rango, lo más grave primero. */
   attention: ParameterStatus[];
+  /** Con dato y dentro de rango (no incluye los "Sin datos"). */
   inRange: ParameterStatus[];
+  /** Sin medición todavía: no son un problema de salud, son una tarea (hacer el check-in o el test). */
+  missing: ParameterStatus[];
   total: number;
+  /** Cuántos de `total` vienen del seguimiento post-salida. */
+  followUpCount: number;
+  /** Estado general. "Sin datos" no lo empeora: solo cuenta si no hay ningún dato. */
   tone: Tone;
   escalation: EscalationLevel;
   headline: string;
@@ -35,13 +42,25 @@ export function summarizeHealth(astronautId: string, readings: Reading[], follow
   const attention = statuses
     .filter((s) => needsAttention(s.tone))
     .sort((a, b) => (a.tone === b.tone ? 0 : a.tone === "bad" ? -1 : 1));
-  const inRange = statuses.filter((s) => !needsAttention(s.tone));
-  const tone = worstTone(statuses.map((s) => s.tone));
+  const missing = statuses.filter((s) => s.tone === "pending");
+  const inRange = statuses.filter((s) => !needsAttention(s.tone) && s.tone !== "pending");
+  const measured = statuses.filter((s) => s.tone !== "pending");
+  const tone: Tone = measured.length === 0 ? "pending" : worstTone(measured.map((s) => s.tone));
   const headline =
     attention.length === 0
       ? "Todo en rango"
       : attention.length === 1
         ? `${attention[0].label}: ${attention[0].plain.toLowerCase()}`
         : `Lo más urgente: ${attention[0].label.toLowerCase()}`;
-  return { statuses, attention, inRange, total: statuses.length, tone, escalation: escalationFor(tone), headline };
+  return {
+    statuses,
+    attention,
+    inRange,
+    missing,
+    total: statuses.length,
+    followUpCount: statuses.length - DAILY_PARAMETERS.length,
+    tone,
+    escalation: escalationFor(tone),
+    headline,
+  };
 }

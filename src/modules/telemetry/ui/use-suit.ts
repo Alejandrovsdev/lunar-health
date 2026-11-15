@@ -9,7 +9,7 @@ import { evaPosition } from "../domain/route";
 export function useSuit(eva: EvaSession | undefined) {
   const now = useNow(1000);
   if (!eva) return null;
-  const snapshot = suitSnapshot(eva.startedAt, now, eva.plannedHours);
+  const snapshot = suitSnapshot(eva.startedAt, now, eva.plannedHours, eva.suitVariant);
   const position = evaPosition(snapshot.elapsedS, eva.plannedHours);
   return { snapshot, position };
 }

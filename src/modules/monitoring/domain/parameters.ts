@@ -1,5 +1,6 @@
-import { formatNumber } from "@/shared/lib/format";
+import { formatDay, formatNumber, formatTime, isSameDay } from "@/shared/lib/format";
 import type { Tone } from "@/shared/domain/status";
+import { intakeDayProgress } from "@/shared/domain/intake-day";
 import type { Evaluation, ParameterId, Reading, DailyParameterId } from "./types";
 
 /**
@@ -22,6 +23,29 @@ export interface ParameterDefinition {
 }
 
 const e = (tone: Tone, plain: string): Evaluation => ({ tone, plain });
+
+/** Meta mínima de líquidos (NASA: al menos 2.000 mL por día). */
+export const WATER_MIN_ML = 2000;
+
+/**
+ * Total diario de ingesta (agua, calorías) contra su mínimo.
+ * Si el día terminó se juzga el total; si está en curso, se compara con lo esperable a la hora del último registro.
+ */
+function dailyIntake(ratio: number, at: string, badBelow = 0.75): Evaluation {
+  const progress = intakeDayProgress(at);
+  if (progress >= 1) return ratio < badBelow ? e("bad", "Muy poca") : ratio < 1 ? e("warn", "Poca") : e("ok", "Suficiente");
+  if (progress < 0.15 || ratio >= progress * 0.6) return e("ok", "Al día");
+  return e("warn", "Atrasada");
+}
+
+/** Cuándo corresponde un total diario: "hasta las 10:30" (hoy, en curso), "ayer" o "el 3 nov". */
+function intakeWhen(at: string): string {
+  const now = new Date();
+  if (isSameDay(at, now)) return intakeDayProgress(at) < 1 ? `hasta las ${formatTime(at)}` : "hoy";
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  return isSameDay(at, yesterday) ? "ayer" : `el ${formatDay(at)}`;
+}
 
 export const PARAMETERS: Record<ParameterId, ParameterDefinition> = {
   sleep: {
@@ -199,6 +223,38 @@ export const PARAMETERS: Record<ParameterId, ParameterDefinition> = {
     source: "Riesgo HRP · Lesión en caminatas espaciales (EVA)",
     how: "Check-in de la esclusa y controles a las 2 h y 24 h",
   },
+  hydration: {
+    id: "hydration",
+    label: "Hidratación",
+    unit: "mL",
+    normalText: "2.000 mL o más por día",
+    format: (r) => `${formatNumber(r.value)} mL ${intakeWhen(r.at)}`,
+    evaluate: (r) => dailyIntake(r.value / WATER_MIN_ML, r.at),
+    chart: { min: 0, max: 3500, bandLow: 2000, bandHigh: 3500 },
+    why: "En el espacio sube el riesgo de cálculos renales (el hueso libera calcio) y en las EVA se pierde mucha agua con el sudor. Con poca agua bajan la atención y el rendimiento.",
+    action: {
+      warn: "Tomá un vaso de agua (250 mL) por hora hasta la noche y registralo en Alimentación.",
+      bad: "Tomá 500 mL ahora y registralo. Si tenés mareo, dolor de cabeza u orina oscura, avisá al oficial médico.",
+    },
+    source: "NASA-STD-3001 · Requerimientos nutricionales para exploración: líquidos ≥ 2.000 mL/día",
+    how: "Registro de bebidas en Alimentación (incluye el agua de las comidas rehidratables) y bolsa de bebida del traje en las EVA",
+  },
+  nutrition: {
+    id: "nutrition",
+    label: "Alimentación",
+    unit: "%",
+    normalText: "90 a 125 % de tus calorías",
+    format: (r) => `${formatNumber(r.value2 ?? 0)} kcal · ${r.value} % de la meta ${intakeWhen(r.at)}`,
+    evaluate: (r) => (r.value > 125 ? e("warn", "De más") : dailyIntake(r.value / 90, r.at, 75 / 90)),
+    chart: { min: 40, max: 140, bandLow: 90, bandHigh: 125 },
+    why: "Comer menos de lo que se gasta acelera la pérdida de músculo y hueso, y en las misiones casi todos comen de menos. La comida envasada además trae poca fibra y mucha sal.",
+    action: {
+      warn: "Revisá en Alimentación qué te falta o sobra hoy. Si vas atrasado/a, sumá una colación (frutos secos, yogur o barra).",
+      bad: "Hacé hoy las cuatro comidas y avisá al oficial médico si no tenés apetito.",
+    },
+    source: "NASA-STD-3001 · Requerimientos nutricionales para exploración (energía según ecuaciones de la OMS)",
+    how: "Registro diario de comidas en Alimentación: calorías, proteína, fibra, calcio, vitamina D y sodio",
+  },
 };
 
 export const DAILY_PARAMETERS: DailyParameterId[] = [
@@ -212,6 +268,8 @@ export const DAILY_PARAMETERS: DailyParameterId[] = [
   "temperature",
   "spo2",
   "pvt",
+  "hydration",
+  "nutrition",
 ];
 
 export function evaluateReading(r: Reading): Evaluation {

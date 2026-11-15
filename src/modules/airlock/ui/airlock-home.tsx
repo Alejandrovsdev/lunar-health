@@ -5,8 +5,10 @@ import { useAppStore } from "@/core/store";
 import { formatNumber, formatTime } from "@/shared/lib/format";
 import { Button } from "@/shared/ui/button";
 import { StatusPill } from "@/shared/components/status";
+import { CrewAvatar } from "@/shared/components/avatar";
 import { useSuit } from "@/modules/telemetry";
 import type { Astronaut } from "@/modules/monitoring/domain";
+import { evaTeams } from "../domain/team";
 
 const OUT_STEPS = ["Plan de la salida", "Cómo te sentís", "Signos vitales", "Test cognitivo", "Equilibrio", "Traje y pre-respirado", "Resultado"];
 const IN_STEPS = ["Resumen de la salida", "Síntomas de descompresión", "Polvo lunar", "Signos vitales", "Manos e hidratación", "Resultado y seguimiento"];
@@ -16,7 +18,7 @@ export function AirlockHome() {
   const astronauts = useAppStore((s) => s.astronauts);
   const log = useAppStore((s) => s.airlockLog);
   const inside = astronauts.filter((a) => a.location === "interior");
-  const outside = astronauts.filter((a) => a.location === "exterior");
+  const teams = evaTeams(astronauts);
 
   return (
     <div className="flex flex-col gap-6">
@@ -24,9 +26,8 @@ export function AirlockHome() {
         <section className="flex flex-col gap-4 rounded-3xl border bg-card p-8">
           <span className="text-sm font-semibold uppercase tracking-wider text-primary">Salir de la base</span>
           <h2 className="text-4xl font-bold">Check-out</h2>
-          <ol className="list-decimal pl-6 text-lg leading-relaxed">{OUT_STEPS.map((s) => <li key={s}>{s}</li>)}</ol>
-          <div className="mt-auto flex flex-col gap-2">
-            {inside.map((a) => (
+          <div className="flex flex-col gap-2">
+            {scheduledFirst(inside).map((a) => (
               <div key={a.id} className="flex items-center justify-between gap-3 rounded-xl bg-muted px-4 py-3">
                 <span className="flex flex-col">
                   <span className="text-lg font-semibold">{a.name}</span>
@@ -40,18 +41,19 @@ export function AirlockHome() {
               </div>
             ))}
           </div>
+          <StepList steps={OUT_STEPS} />
         </section>
 
         <section className="flex flex-col gap-4 rounded-3xl border bg-card p-8">
           <span className="text-sm font-semibold uppercase tracking-wider text-primary">Entrar a la base</span>
           <h2 className="text-4xl font-bold">Check-in</h2>
-          <ol className="list-decimal pl-6 text-lg leading-relaxed">{IN_STEPS.map((s) => <li key={s}>{s}</li>)}</ol>
-          <div className="mt-auto flex flex-col gap-2">
-            {outside.length === 0 && <p className="text-muted-foreground">No hay nadie afuera.</p>}
-            {outside.map((a) => (
-              <OutsideRow key={a.id} a={a} />
+          <div className="flex flex-col gap-2">
+            {teams.length === 0 && <p className="rounded-xl bg-muted px-4 py-3 text-muted-foreground">No hay nadie en EVA: no hay check-in pendiente.</p>}
+            {teams.map((team) => (
+              <TeamRow key={team[0].id} team={team} />
             ))}
           </div>
+          <StepList steps={IN_STEPS} />
         </section>
       </div>
 
@@ -76,18 +78,48 @@ export function AirlockHome() {
   );
 }
 
-function OutsideRow({ a }: { a: Astronaut }) {
-  const live = useSuit(a.eva);
+/** Quien tiene una salida programada va primero: es el check-out más probable. */
+function scheduledFirst(list: Astronaut[]) {
+  return [...list].sort((a, b) => Number(Boolean(b.nextEva)) - Number(Boolean(a.nextEva)));
+}
+
+/** Los pasos como referencia secundaria: la acción (a quién) va primero. */
+function StepList({ steps }: { steps: string[] }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-xl bg-muted px-4 py-3">
-      <span className="flex flex-col">
-        <span className="text-lg font-semibold">{a.name}</span>
-        <Link href={`/astronautas/${a.id}/mapa`} className="text-sm font-semibold text-primary hover:underline">
-          Afuera · a {live ? formatNumber(live.position.distanceKm, 2) : "—"} km de la base →
-        </Link>
+    <div className="mt-auto flex flex-col gap-2 border-t pt-4">
+      <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{steps.length} pasos · se guían uno por uno</span>
+      <ol className="flex flex-wrap gap-1.5">
+        {steps.map((s, i) => (
+          <li key={s} className="rounded-full bg-muted px-2.5 py-1 text-xs">
+            <span className="font-semibold text-muted-foreground">{i + 1}.</span> {s}
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
+/** Equipo de EVA: la pareja salió junta y hace el check-in junta. */
+function TeamRow({ team }: { team: Astronaut[] }) {
+  const [lead] = team;
+  const live = useSuit(lead.eva);
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-muted px-4 py-3">
+      <span className="flex items-center gap-3">
+        <span className="flex -space-x-3">
+          {team.map((a) => (
+            <CrewAvatar key={a.id} name={a.name} photo={a.photo} tone="info" className="size-12 ring-2 ring-offset-1 ring-offset-muted" />
+          ))}
+        </span>
+        <span className="flex flex-col">
+          <span className="text-lg font-semibold">{team.map((a) => a.name).join(" y ")}</span>
+          <Link href={`/astronautas/${lead.id}/mapa`} className="text-sm font-semibold text-primary hover:underline">
+            En EVA · a {live ? formatNumber(live.position.distanceKm, 2) : "—"} km de la base →
+          </Link>
+        </span>
       </span>
       <Button asChild size="lg">
-        <Link href={`/esclusa/check-in/${a.id}`}>Empezar check-in</Link>
+        <Link href={`/esclusa/check-in/${lead.id}`}>{team.length > 1 ? "Check-in del equipo" : "Empezar check-in"}</Link>
       </Button>
     </div>
   );

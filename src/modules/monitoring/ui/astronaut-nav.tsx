@@ -3,49 +3,59 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/shared/lib/cn";
-import { SectionLabel } from "@/shared/components/page-header";
+import type { Location } from "../domain/types";
 
-/** Barra de la ficha: información a la izquierda, tests a la derecha. */
-export function AstronautNav({ astronautId, pendingTests }: { astronautId: string; pendingTests: number }) {
+/**
+ * Pestañas de la ficha, debajo de la cabecera (dónde estoy / a dónde puedo ir).
+ * Orden progresivo: resumen → detalle por sistema → historial.
+ * En EVA solo hay dos vistas: el traje en vivo y el mapa.
+ */
+export function AstronautNav({ astronautId, location, pendingTests }: { astronautId: string; location: Location; pendingTests: number }) {
   const path = usePathname();
   const base = `/astronautas/${astronautId}`;
-  const links = [
-    { href: base, label: "Mi estado" },
-    { href: `${base}/cuerpo`, label: "Mi cuerpo" },
-    { href: `${base}/signos`, label: "Signos vitales" },
-    { href: `${base}/resultados`, label: "Resultados" },
-    { href: `${base}/evolucion`, label: "Mi evolución" },
-  ];
+  const links =
+    location === "exterior"
+      ? [
+          { href: base, label: "Traje en vivo" },
+          { href: `${base}/mapa`, label: "Mapa" },
+        ]
+      : [
+          { href: base, label: "Resumen" },
+          { href: `${base}/cuerpo`, label: "Cuerpo" },
+          { href: `${base}/signos`, label: "Signos vitales" },
+          { href: `${base}/alimentacion`, label: "Alimentación" },
+          { href: `${base}/resultados`, label: "Estudios" },
+          { href: `${base}/evolucion`, label: "Evolución" },
+        ];
   return (
-    <nav aria-label="Secciones del astronauta" className="flex flex-wrap items-end gap-4">
-      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-        <SectionLabel>Información</SectionLabel>
-        <div className="flex flex-wrap gap-2">
-          {links.map((l) => (
+    <nav aria-label="Secciones de la ficha" className="flex flex-wrap items-center gap-3 border-b">
+      <div className="-mb-px flex min-w-0 flex-1 gap-1 overflow-x-auto">
+        {links.map((l) => {
+          const active = path === l.href;
+          return (
             <Link
               key={l.href}
               href={l.href}
-              aria-current={path === l.href ? "page" : undefined}
+              aria-current={active ? "page" : undefined}
               className={cn(
-                "flex min-h-11 flex-1 items-center justify-center rounded-lg border px-3 text-sm font-semibold",
-                path === l.href ? "border-primary bg-accent text-primary" : "bg-card text-primary hover:bg-accent",
+                "flex min-h-11 shrink-0 items-center border-b-[3px] px-4 text-sm font-semibold transition-colors",
+                active ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:border-input hover:text-foreground",
               )}
             >
               {l.label}
             </Link>
-          ))}
-        </div>
+          );
+        })}
       </div>
-      <div className="flex w-full flex-col gap-1.5 sm:w-64">
-        <SectionLabel>Tests</SectionLabel>
+      {location === "interior" && (
         <Link
           href={`/tests/${astronautId}`}
-          className="flex min-h-11 items-center justify-center gap-2 rounded-lg bg-primary px-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+          className="mb-2 flex min-h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
         >
           Tests de hoy
           {pendingTests > 0 && <span className="rounded-full bg-card px-2 py-0.5 text-xs text-primary">{pendingTests} pendientes</span>}
         </Link>
-      </div>
+      )}
     </nav>
   );
 }

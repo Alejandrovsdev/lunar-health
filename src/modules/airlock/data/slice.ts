@@ -1,13 +1,21 @@
 import type { StateCreator } from "zustand";
 import type { AppState } from "@/core/store-types";
 import { newId, type NewReading } from "@/modules/monitoring/data/slice";
+import { SUIT_WATER_ID } from "@/modules/nutrition/domain/foods";
 import type { AirlockRecord, AirlockVerdict, CheckInForm, CheckOutForm, VitalsInput } from "../domain/types";
 import { decompressionCount, dustLevel } from "../domain/rules";
 
 export interface AirlockSlice {
   airlockLog: AirlockRecord[];
   completeCheckOut: (astronautId: string, form: CheckOutForm, verdict: AirlockVerdict) => void;
-  completeCheckIn: (astronautId: string, form: CheckInForm, verdict: AirlockVerdict) => void;
+  /** Check-in del equipo de EVA: entran juntos, cada uno con su formulario y su resultado. */
+  completeCheckIn: (members: CheckInEntry[]) => void;
+}
+
+export interface CheckInEntry {
+  astronautId: string;
+  form: CheckInForm;
+  verdict: AirlockVerdict;
 }
 
 export function airlockInitialState() {
@@ -36,7 +44,6 @@ export const createAirlockSlice: StateCreator<AppState, [], [], AirlockSlice> = 
         startedAt: at,
         destination: form.destination,
         plannedHours: verdict.tone === "warn" ? Math.min(form.plannedHours, 4) : form.plannedHours,
-        partnerId: form.partnerId || undefined,
       });
     }
     set((s) => ({
@@ -44,17 +51,31 @@ export const createAirlockSlice: StateCreator<AppState, [], [], AirlockSlice> = 
     }));
   },
 
-  completeCheckIn: (astronautId, form, verdict) => {
+  completeCheckIn: (members) => {
     const at = new Date().toISOString();
-    const followUpReadings: NewReading[] = [
-      { astronautId, at, source: "esclusa", parameterId: "decompression", value: decompressionCount(form) },
-      { astronautId, at, source: "esclusa", parameterId: "dustIrritation", value: dustLevel(form) },
-    ];
-    get().addReadings([...vitalsReadings(astronautId, form, at), ...followUpReadings]);
-    get().openFollowUp(astronautId, ["decompression", "dustIrritation"], at);
-    get().endEva(astronautId);
+    for (const { astronautId, form } of members) {
+      const followUpReadings: NewReading[] = [
+        { astronautId, at, source: "esclusa", parameterId: "decompression", value: decompressionCount(form) },
+        { astronautId, at, source: "esclusa", parameterId: "dustIrritation", value: dustLevel(form) },
+      ];
+      get().addReadings([...vitalsReadings(astronautId, form, at), ...followUpReadings]);
+      get().openFollowUp(astronautId, ["decompression", "dustIrritation"], at);
+      // Lo que tomó de la bolsa del traje cuenta para la hidratación del día.
+      if (form.waterPercent !== "") get().logIntake(astronautId, SUIT_WATER_ID, Number(form.waterPercent) / 100, "eva", at);
+      // Al cerrar la EVA, su dosis de radiación se suma al acumulado de la misión.
+      get().endEva(astronautId);
+    }
     set((s) => ({
-      airlockLog: [...s.airlockLog, { id: newId("in"), kind: "check-in", astronautId, at, verdict: { tone: verdict.tone, title: verdict.title, escalation: verdict.escalation } }],
+      airlockLog: [
+        ...s.airlockLog,
+        ...members.map(({ astronautId, verdict }) => ({
+          id: newId("in"),
+          kind: "check-in" as const,
+          astronautId,
+          at,
+          verdict: { tone: verdict.tone, title: verdict.title, escalation: verdict.escalation },
+        })),
+      ],
     }));
   },
 });
