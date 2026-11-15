@@ -3,8 +3,8 @@ import type { AppState } from "@/core/store-types";
 import { worstTone, TONE_LABEL } from "@/shared/domain/status";
 import { evaluateReading } from "@/modules/monitoring/domain";
 import { newId, type NewReading } from "@/modules/monitoring/data/slice";
-import type { AssessmentResult, DailyCheckInForm, WeeklyAnswers } from "../domain/types";
-import { scorePvt, scoreWeekly } from "../domain/scoring";
+import type { AssessmentResult, DailyCheckInForm, StressAnswers, WeeklyAnswers } from "../domain/types";
+import { scorePvt, scoreStress, scoreWeekly } from "../domain/scoring";
 
 export interface AssessmentsSlice {
   assessmentResults: AssessmentResult[];
@@ -12,6 +12,7 @@ export interface AssessmentsSlice {
   submitPvt: (astronautId: string, times: number[], falseStarts: number) => AssessmentResult;
   submitBalance: (astronautId: string, stable: boolean) => AssessmentResult;
   submitWeekly: (astronautId: string, answers: WeeklyAnswers) => AssessmentResult;
+  submitStress: (astronautId: string, answers: StressAnswers) => AssessmentResult;
 }
 
 export function assessmentsInitialState() {
@@ -87,7 +88,21 @@ export const createAssessmentsSlice: StateCreator<AppState, [], [], AssessmentsS
         at,
         tone: s.emotionalTone,
         plain: s.emotionalPlain,
-        detail: `Afecto positivo ${s.positive}/25 · negativo ${s.negative}/25 · salud general ${s.generalHealth}/15 · convivencia ${s.cohesion}/5 (${TONE_LABEL[s.emotionalTone]})`,
+        detail: `Afecto positivo ${s.positive}/50 · negativo ${s.negative}/50 · salud general ${s.generalHealth}/15 · convivencia ${s.cohesion}/5 (${TONE_LABEL[s.emotionalTone]})`,
+      });
+    },
+
+    submitStress: (astronautId, answers) => {
+      const at = new Date().toISOString();
+      const s = scoreStress(answers);
+      get().addReadings([{ astronautId, at, source: "escala-estres", parameterId: "stress", value: s.total }]);
+      return save({
+        astronautId,
+        testId: "stress",
+        at,
+        tone: s.tone,
+        plain: s.plain,
+        detail: `PSS-14: ${s.total}/56 · ${s.plain} · orientativo, no diagnóstico`,
       });
     },
   };

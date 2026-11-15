@@ -10,6 +10,7 @@ import { useTestStatuses, type TestStatus } from "./hooks";
 const GROUPS: { label: string; match: (t: TestStatus) => boolean }[] = [
   { label: "Hoy", match: (t) => t.frequency === "daily" },
   { label: "Esta semana", match: (t) => t.frequency === "weekly" },
+  { label: "Este mes", match: (t) => t.frequency === "monthly" },
   { label: "Antes de salir", match: (t) => t.frequency === "pre-eva" },
 ];
 

@@ -54,7 +54,7 @@ export const PARAMETERS: Record<ParameterId, ParameterDefinition> = {
       bad: "Avisá al oficial médico hoy. Hablarlo temprano ayuda.",
     },
     source: "Standard Measures · PANAS (afecto positivo y negativo) y GHQ",
-    how: "Check-in diario (1 a 5) y PANAS breve semanal",
+    how: "Check-in diario (1 a 5) y PANAS semanal (20 emociones)",
   },
   cohesion: {
     id: "cohesion",
@@ -173,6 +173,22 @@ export const PARAMETERS: Record<ParameterId, ParameterDefinition> = {
     source: "Standard Measures · Cognition (vigilancia psicomotora, PVT)",
     how: "Test de reacción en pantalla, 5 intentos",
   },
+  stress: {
+    id: "stress",
+    label: "Estrés percibido",
+    unit: "/ 56",
+    normalText: "0 a 18 (bajo)",
+    format: (r) => `${r.value} de 56`,
+    evaluate: ({ value: v }) => (v >= 38 ? e("bad", "Alto") : v >= 19 ? e("warn", "Moderado") : e("ok", "Bajo")),
+    chart: { min: 0, max: 56, bandLow: 0, bandHigh: 18 },
+    why: "La Escala de Estrés Percibido (PSS-14) mide cuánto se evalúan como estresantes las situaciones del último mes. Los puntajes altos sostenidos afectan el sueño, el ánimo y las decisiones.",
+    action: {
+      warn: "Revisá qué situaciones del mes te están cargando y hablalo con el oficial médico. Repetí la escala el próximo mes.",
+      bad: "Hablá con el oficial médico esta semana. El resultado es orientativo: sirve para conversar, no como diagnóstico.",
+    },
+    source: "Cohen, Kamarck & Mermelstein (1983) · PSS-14, adaptación española de E. Remor",
+    how: "Test mensual de 14 preguntas (último mes)",
+  },
   decompression: {
     id: "decompression",
     label: "Descompresión (post-salida)",
@@ -212,6 +228,7 @@ export const DAILY_PARAMETERS: DailyParameterId[] = [
   "temperature",
   "spo2",
   "pvt",
+  "stress",
 ];
 
 export function evaluateReading(r: Reading): Evaluation {

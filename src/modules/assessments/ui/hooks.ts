@@ -42,6 +42,15 @@ export function useTestStatuses(astronautId: string): TestStatus[] {
         const fresh = at && now.getTime() - new Date(at).getTime() < 6 * 86400_000;
         return { ...t, last: l, state: fresh ? "done" : "pending", note: fresh ? "Hecho esta semana" : "Pendiente esta semana" } as TestStatus;
       }
+      if (t.frequency === "monthly") {
+        const fresh = l && now.getTime() - new Date(l.at).getTime() < 30 * 86400_000;
+        return {
+          ...t,
+          last: l,
+          state: fresh ? "done" : "pending",
+          note: fresh ? `Hecho este mes · ${l!.plain}` : "Pendiente este mes",
+        } as TestStatus;
+      }
       const evaSoon = astronaut?.nextEva && new Date(astronaut.nextEva.at).getTime() - now.getTime() < 24 * 3600_000;
       const doneToday = l && isSameDay(l.at, now);
       return {

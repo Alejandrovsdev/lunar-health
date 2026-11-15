@@ -7,3 +7,4 @@ export { TestsHub } from "./ui/tests-hub";
 export { TestRunner, TEST_COMPONENTS, type TestComponentProps } from "./ui/test-runner";
 export { PvtTest } from "./ui/tests/pvt-test";
 export { BalanceTest } from "./ui/tests/balance-test";
+export { StressTest } from "./ui/tests/stress-test";
