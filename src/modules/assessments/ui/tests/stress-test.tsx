@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useAppStore } from "@/core/store";
+import { t, tx } from "@/shared/i18n";
 import { Button } from "@/shared/ui/button";
 import { ChoiceGroup } from "@/shared/ui/form";
 import { Progress } from "@/shared/ui/progress";
@@ -66,7 +67,7 @@ export function StressTest({ astronautId, onDone }: { astronautId: string; onDon
     <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-2">
         <span className="text-sm text-muted-foreground">
-          Paso {step + 1} de {STEPS.length} · {STEPS[step].label}
+          {t("Paso {n} de {total}", { n: step + 1, total: STEPS.length })} · {t(STEPS[step].label)}
         </span>
         <Progress value={((step + 1) / STEPS.length) * 100} />
       </div>
@@ -74,12 +75,12 @@ export function StressTest({ astronautId, onDone }: { astronautId: string; onDon
       <section className="flex flex-col gap-4 rounded-2xl border bg-card p-5">
         {step === 0 && (
           <p className="text-sm text-muted-foreground">
-            Pensá en el último mes. No hay respuestas correctas: elegí la opción que mejor refleje cómo te sentiste o pensaste.
+            {t(INTRO)}
           </p>
         )}
-        <p className="text-lg font-semibold">En el último mes, ¿con qué frecuencia…?</p>
+        <p className="text-lg font-semibold">{t("En el último mes, ¿con qué frecuencia…?")}</p>
         {items.map((i, idx) => {
-          const short = i.label.replace(/^En el último mes, ¿con qué frecuencia /, "");
+          const short = tx(i.label).replace(/^(En el último mes, ¿con qué frecuencia |In the last month, how often )/, "");
           return (
             <ChoiceGroup
               key={i.id}
@@ -93,22 +94,22 @@ export function StressTest({ astronautId, onDone }: { astronautId: string; onDon
         })}
         {step === STEPS.length - 1 && (
           <p className="text-sm text-muted-foreground">
-            Este test es orientativo y no reemplaza una evaluación médica. Se repite una vez por mes.
+            {t("Este test es orientativo y no reemplaza una evaluación médica. Se repite una vez por mes.")}
           </p>
         )}
       </section>
 
       <div className="flex justify-between gap-3">
         <Button variant="outline" size="lg" disabled={step === 0} onClick={() => setStep((s) => s - 1)}>
-          Anterior
+          {t("Anterior")}
         </Button>
         {step < STEPS.length - 1 ? (
           <Button size="lg" disabled={!stepDone} onClick={() => setStep((s) => s + 1)}>
-            Siguiente
+            {t("Siguiente")}
           </Button>
         ) : (
           <Button size="lg" disabled={!isStressComplete(a)} onClick={() => onDone(submit(astronautId, a))}>
-            Enviar test
+            {t("Enviar test")}
           </Button>
         )}
       </div>

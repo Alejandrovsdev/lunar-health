@@ -3,7 +3,8 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAppStore } from "@/core/store";
-import { isSameDay } from "@/shared/lib/format";
+import { formatNumber, isSameDay } from "@/shared/lib/format";
+import { t } from "@/shared/i18n";
 import { Button } from "@/shared/ui/button";
 import { ChoiceGroup, YesNo } from "@/shared/ui/form";
 import { PlainValue } from "@/shared/components/status";
@@ -11,7 +12,8 @@ import { CrewAvatar } from "@/shared/components/avatar";
 import { BalanceTest, PvtTest, scorePvt } from "@/modules/assessments";
 import { evaluateCheckOut } from "../domain/rules";
 import type { CheckOutForm } from "../domain/types";
-import { VerdictPanel, VitalsFields } from "./parts";
+import { VerdictPanel } from "./parts";
+import { SuitVitalsReading } from "./suit-vitals";
 import { Wizard } from "./wizard";
 
 const DESTINATIONS = ["Borde del cráter", "Zona en sombra", "Antena de comunicaciones", "Campo de paneles solares"];
@@ -101,7 +103,7 @@ export function CheckOutWizard({ astronautId }: { astronautId: string }) {
       valid: [f.sleptEnough, f.headache, f.jointPain, f.nausea, f.unusualFatigue].every((v) => v !== null),
       content: (
         <>
-          <YesNo name="slept" legend="¿Dormiste al menos 6 h?" value={f.sleptEnough} onChange={(v) => patch({ sleptEnough: v })} hint={latest.sleep !== undefined ? `Tu sensor registró ${latest.sleep.toLocaleString("es-AR")} h anoche.` : undefined} />
+          <YesNo name="slept" legend="¿Dormiste al menos 6 h?" value={f.sleptEnough} onChange={(v) => patch({ sleptEnough: v })} hint={latest.sleep !== undefined ? t("Tu sensor registró {h} h anoche.", { h: formatNumber(latest.sleep, 1) }) : undefined} />
           <YesNo name="headache" legend="¿Tenés dolor de cabeza o mareo?" value={f.headache} onChange={(v) => patch({ headache: v })} />
           <YesNo name="joint" legend="¿Te duelen las articulaciones?" value={f.jointPain} onChange={(v) => patch({ jointPain: v })} />
           <YesNo name="nausea" legend="¿Tenés náuseas o visión borrosa?" value={f.nausea} onChange={(v) => patch({ nausea: v })} />
@@ -112,9 +114,9 @@ export function CheckOutWizard({ astronautId }: { astronautId: string }) {
     {
       id: "vitals",
       title: "Signos vitales ahora",
-      subtitle: "Medilos en la esclusa con los equipos del panel.",
+      subtitle: "Los toman los sensores biomédicos del traje. Quedate quieto/a unos segundos mientras mide.",
       valid: vitalsOk,
-      content: <VitalsFields form={f} onChange={patch} />,
+      content: <SuitVitalsReading astronautId={astronautId} form={f} onChange={patch} />,
     },
     {
       id: "pvt",
@@ -131,9 +133,9 @@ export function CheckOutWizard({ astronautId }: { astronautId: string }) {
         />
       ) : (
         <div className="flex flex-wrap items-center gap-6 rounded-xl bg-muted p-5">
-          {f.pvt ? <PlainValue tone={f.pvt.tone} plain={f.pvt.plain} detail={f.pvt.detail} size="lg" /> : <span className="text-lg">Todavía no lo hiciste hoy.</span>}
+          {f.pvt ? <PlainValue tone={f.pvt.tone} plain={f.pvt.plain} detail={f.pvt.detail} size="lg" /> : <span className="text-lg">{t("Todavía no lo hiciste hoy.")}</span>}
           <Button size="lg" variant={f.pvt ? "outline" : "default"} onClick={() => setRunPvt(true)}>
-            {f.pvt ? "Repetir el test" : "Hacer el test ahora"}
+            {f.pvt ? t("Repetir el test") : t("Hacer el test ahora")}
           </Button>
         </div>
       ),
@@ -156,10 +158,10 @@ export function CheckOutWizard({ astronautId }: { astronautId: string }) {
           {f.balanceStable !== null ? (
             <PlainValue tone={f.balanceStable ? "ok" : "warn"} plain={f.balanceStable ? "Estable" : "Inestable"} detail="Resultado de hoy" size="lg" />
           ) : (
-            <span className="text-lg">Todavía no lo hiciste hoy.</span>
+            <span className="text-lg">{t("Todavía no lo hiciste hoy.")}</span>
           )}
           <Button size="lg" variant={f.balanceStable !== null ? "outline" : "default"} onClick={() => setRunBalance(true)}>
-            {f.balanceStable !== null ? "Repetir el test" : "Hacer el test ahora"}
+            {f.balanceStable !== null ? t("Repetir el test") : t("Hacer el test ahora")}
           </Button>
         </div>
       ),
@@ -175,7 +177,7 @@ export function CheckOutWizard({ astronautId }: { astronautId: string }) {
           <YesNo name="consumables" legend="¿Oxígeno, batería y agua están completos?" value={f.consumablesFull} onChange={(v) => patch({ consumablesFull: v })} />
           <label className="flex min-h-14 cursor-pointer items-center gap-3 rounded-lg bg-muted p-3 text-base font-semibold">
             <input type="checkbox" className="size-5" checked={f.prebreatheDone} onChange={(e) => patch({ prebreatheDone: e.target.checked })} />
-            Terminé el pre-respirado de oxígeno
+            {t("Terminé el pre-respirado de oxígeno")}
           </label>
         </>
       ),
@@ -200,7 +202,7 @@ export function CheckOutWizard({ astronautId }: { astronautId: string }) {
             router.push(verdict.allowed ? `/astronautas/${astronautId}` : "/esclusa");
           }}
         >
-          {verdict.allowed ? "Confirmar salida" : "Registrar y volver"}
+          {verdict.allowed ? t("Confirmar salida") : t("Registrar y volver")}
         </Button>
       }
     />
@@ -209,7 +211,7 @@ export function CheckOutWizard({ astronautId }: { astronautId: string }) {
 
 function scorePvtFromReading(avg: number, lapses: number) {
   const s = scorePvt(Array(5).fill(avg), 0);
-  const tone = lapses >= 3 ? "bad" : lapses >= 2 && s.tone === "ok" ? "warn" : s.tone;
+  const tone = lapses >= 4 ? "bad" : lapses >= 2 && s.tone === "ok" ? "warn" : s.tone;
   const plain = tone === "ok" ? "Normal" : tone === "warn" ? "Más lento" : "Muy lento";
   return { tone, plain, detail: `${avg} ms de promedio · ${lapses} lapsos · hoy` } as CheckOutForm["pvt"];
 }

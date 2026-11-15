@@ -5,6 +5,7 @@ import { Repeat, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/shared/ui/button";
 import { ChoiceGroup, type ChoiceOption } from "@/shared/ui/form";
 import { Progress } from "@/shared/ui/progress";
+import { t, tx } from "@/shared/i18n";
 import type { SpeechApi } from "./use-speech";
 
 export interface GuidedQuestion {
@@ -50,9 +51,14 @@ export function GuidedFlow({ sections, getValue, onAnswer, isComplete, onComplet
 
   const narrate = (i: number) => {
     const { q, section } = flat[i];
-    const text = `Pregunta ${i + 1} de ${total}. ${q.text}. Opciones: ${section.options.map((o) => o.label).join(", ")}.`;
+    const text = t("Pregunta {n} de {total}. {question}. Opciones: {options}.", {
+      n: i + 1,
+      total,
+      question: tx(q.text),
+      options: section.options.map((o) => tx(o.label)).join(", "),
+    });
     const startsSection = i === 0 || flat[i - 1].sectionIndex !== flat[i].sectionIndex;
-    if (section.intro && startsSection) speech.speak(section.intro, () => speech.speak(text));
+    if (section.intro && startsSection) speech.speak(tx(section.intro), () => speech.speak(text));
     else speech.speak(text);
   };
 
@@ -77,7 +83,7 @@ export function GuidedFlow({ sections, getValue, onAnswer, isComplete, onComplet
       window.clearTimeout(timerRef.current);
       timerRef.current = window.setTimeout(() => setIndex((i) => i + 1), 500);
     } else if (prev == null) {
-      speech.speak("Terminaste todas las preguntas. Revisá tus respuestas y, cuando quieras, enviá el test.");
+      speech.speak(t("Terminaste todas las preguntas. Revisá tus respuestas y, cuando quieras, enviá el test."));
     }
   };
 
@@ -88,7 +94,7 @@ export function GuidedFlow({ sections, getValue, onAnswer, isComplete, onComplet
     <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-2">
         <span className="text-sm text-muted-foreground">
-          Pregunta {index + 1} de {total} · con lectura por voz
+          {t("Pregunta {n} de {total} · con lectura por voz", { n: index + 1, total })}
         </span>
         <Progress value={((index + 1) / total) * 100} />
       </div>
@@ -97,37 +103,37 @@ export function GuidedFlow({ sections, getValue, onAnswer, isComplete, onComplet
         <ChoiceGroup
           key={item.q.id}
           name={`guided-${item.q.id}`}
-          legend={`${index + 1}. ${item.q.text}`}
+          legend={`${index + 1}. ${tx(item.q.text)}`}
           options={item.section.options}
           value={getValue(item.q.id)}
           onChange={(v) => answer(item.q.id, v)}
         />
         <p className="text-sm text-muted-foreground">
-          {speech.speaking ? "Leyendo la pregunta…" : "Elegí una opción para pasar a la siguiente."}
+          {speech.speaking ? t("Leyendo la pregunta…") : t("Elegí una opción para pasar a la siguiente.")}
         </p>
       </section>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex gap-2">
           <Button variant="outline" size="lg" disabled={index === 0} onClick={() => goTo(index - 1)}>
-            Anterior
+            {t("Anterior")}
           </Button>
-          <Button variant="outline" size="lg" onClick={() => narrate(index)} aria-label="Repetir la pregunta">
+          <Button variant="outline" size="lg" onClick={() => narrate(index)} aria-label={t("Repetir la pregunta")}>
             <Repeat className="size-4" />
-            Repetir
+            {t("Repetir")}
           </Button>
-          <Button variant="outline" size="lg" onClick={speech.stop} disabled={!speech.speaking} aria-label="Silenciar la voz">
+          <Button variant="outline" size="lg" onClick={speech.stop} disabled={!speech.speaking} aria-label={t("Silenciar la voz")}>
             {speech.speaking ? <Volume2 className="size-4" /> : <VolumeX className="size-4" />}
-            Silenciar
+            {t("Silenciar")}
           </Button>
         </div>
         {index < total - 1 ? (
           <Button size="lg" disabled={!answered} onClick={() => goTo(index + 1)}>
-            Siguiente
+            {t("Siguiente")}
           </Button>
         ) : (
           <Button size="lg" disabled={!isComplete()} onClick={onComplete}>
-            {submitLabel}
+            {tx(submitLabel)}
           </Button>
         )}
       </div>

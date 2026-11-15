@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { cn } from "@/shared/lib/cn";
 import { formatTime } from "@/shared/lib/format";
+import { t, tx } from "@/shared/i18n";
 import { TONE_CLASSES } from "@/shared/domain/status";
 import { PlainValue, StatusDot } from "@/shared/components/status";
 import { EscalationLadder } from "@/shared/components/escalation-ladder";
@@ -28,37 +29,37 @@ export function InteriorProfile({ astronautId }: { astronautId: string }) {
   // Lo que falta se completa donde se registra: comidas e hidratación en Alimentación, el resto con los tests.
   const onlyIntake = h.missing.every((s) => s.id === "hydration" || s.id === "nutrition");
   const register = onlyIntake
-    ? { href: `/astronautas/${astronautId}/alimentacion`, label: "Registrar en Alimentación →" }
-    : { href: `/tests/${astronautId}`, label: "Completar los tests de hoy →" };
+    ? { href: `/astronautas/${astronautId}/alimentacion`, label: t("Registrar en Alimentación →") }
+    : { href: `/tests/${astronautId}`, label: t("Completar los tests de hoy →") };
 
   return (
     <div className="flex flex-col gap-5">
       <section className={cn("flex flex-wrap items-baseline gap-x-5 gap-y-1 rounded-2xl px-6 py-4", tc.soft)}>
         <span className={cn("font-display text-3xl font-bold", tc.strong)}>
-          {h.attention.length} de {h.total} parámetros a atender
+          {t("{n} de {total} parámetros a atender", { n: h.attention.length, total: h.total })}
         </span>
-        <span className="text-base">{h.attention.length ? "Tocá cada uno para ver su evolución y qué hacer." : "Todo en rango. Seguí con tu rutina."}</span>
+        <span className="text-base">{h.attention.length ? t("Tocá cada uno para ver su evolución y qué hacer.") : t("Todo en rango. Seguí con tu rutina.")}</span>
         {h.missing.length > 0 && (
           <Link href={register.href} className="text-sm font-semibold text-primary hover:underline">
-            {h.missing.length} sin datos hoy · {register.label}
+            {t("{n} sin datos hoy", { n: h.missing.length })} · {register.label}
           </Link>
         )}
       </section>
 
       {followUp && (
         <section className="flex flex-wrap items-center gap-3 rounded-xl border border-info bg-info-soft px-4 py-3 text-sm text-info-strong">
-          <strong>Seguimiento post-salida activo.</strong>
+          <strong>{t("Seguimiento post-salida activo.")}</strong>
           {followUp.checkpoints.map((c) => (
             <span key={c.label}>
-              {c.label}: {new Date(c.at).getTime() < Date.now() ? "hecho" : `a las ${formatTime(c.at)}`}
+              {tx(c.label)}: {new Date(c.at).getTime() < Date.now() ? t("hecho") : t("a las {time}", { time: formatTime(c.at) })}
             </span>
           ))}
         </section>
       )}
 
       {h.attention.length > 0 && (
-        <section aria-label="Parámetros a atender" className="flex flex-col gap-2">
-          <SectionLabel>A atender ({h.attention.length})</SectionLabel>
+        <section aria-label={t("Parámetros a atender")} className="flex flex-col gap-2">
+          <SectionLabel>{t("A atender ({n})", { n: h.attention.length })}</SectionLabel>
           <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-3">
             {h.attention.map((s, i) => (
               <button
@@ -75,7 +76,7 @@ export function InteriorProfile({ astronautId }: { astronautId: string }) {
                   {s.label}
                   <StatusDot tone={s.tone} />
                 </span>
-                <PlainValue tone={s.tone} plain={s.plain} detail={`${s.detail} · normal: ${s.normalText}`} />
+                <PlainValue tone={s.tone} plain={s.plain} detail={`${s.detail} · ${t("normal: {range}", { range: s.normalText })}`} />
               </button>
             ))}
           </div>
@@ -87,26 +88,26 @@ export function InteriorProfile({ astronautId }: { astronautId: string }) {
           <h2 className="text-xl font-bold">
             {current.label}: <span className={current.tone === "ok" ? "" : TONE_CLASSES[current.tone].strong}>{current.plain}</span>
           </h2>
-          <span className="text-sm text-muted-foreground">Últimos días · franja verde = normal ({current.normalText})</span>
+          <span className="text-sm text-muted-foreground">{t("Últimos días · franja verde = normal ({range})", { range: current.normalText })}</span>
           <TrendChart status={current} height={190} />
-          <span className="text-sm text-muted-foreground">Cómo se mide: {def.how}</span>
+          <span className="text-sm text-muted-foreground">{t("Cómo se mide: {how}", { how: t(def.how) })}</span>
         </div>
         <div className="flex flex-col gap-3">
           <div className="flex flex-col gap-1">
-            <SectionLabel>Por qué importa en la Luna</SectionLabel>
-            <p className="text-[15px] leading-relaxed">{def.why}</p>
+            <SectionLabel>{t("Por qué importa en la Luna")}</SectionLabel>
+            <p className="text-[15px] leading-relaxed">{t(def.why)}</p>
           </div>
           <div className="flex flex-col gap-2 rounded-xl bg-secondary p-4">
-            <SectionLabel>Qué hacer</SectionLabel>
-            <p className="text-[15px] leading-relaxed">{def.action[current.tone] ?? "Seguí con tu rutina."}</p>
+            <SectionLabel>{t("Qué hacer")}</SectionLabel>
+            <p className="text-[15px] leading-relaxed">{t(def.action[current.tone] ?? "Seguí con tu rutina.")}</p>
             <EscalationLadder level={current.tone === "bad" ? 1 : 0} />
           </div>
-          <span className="text-xs text-muted-foreground">Referencia NASA: {def.source}</span>
+          <span className="text-xs text-muted-foreground">{t("Referencia NASA: {source}", { source: t(def.source) })}</span>
         </div>
       </section>
 
-      <section aria-label="Parámetros en rango" className="flex flex-wrap items-center gap-2">
-        <SectionLabel>En rango ({h.inRange.length})</SectionLabel>
+      <section aria-label={t("Parámetros en rango")} className="flex flex-wrap items-center gap-2">
+        <SectionLabel>{t("En rango ({n})", { n: h.inRange.length })}</SectionLabel>
         {h.inRange.map((s) => (
           <span key={s.id} className="inline-flex items-center gap-1.5 rounded-full border bg-card px-3 py-1.5 text-sm">
             <StatusDot tone={s.tone} />
@@ -117,8 +118,8 @@ export function InteriorProfile({ astronautId }: { astronautId: string }) {
       </section>
 
       {h.missing.length > 0 && (
-        <section aria-label="Parámetros sin datos" className="flex flex-wrap items-center gap-2">
-          <SectionLabel>Sin datos hoy ({h.missing.length})</SectionLabel>
+        <section aria-label={t("Parámetros sin datos")} className="flex flex-wrap items-center gap-2">
+          <SectionLabel>{t("Sin datos hoy ({n})", { n: h.missing.length })}</SectionLabel>
           {h.missing.map((s) => (
             <span key={s.id} className="inline-flex items-center gap-1.5 rounded-full border border-dashed bg-muted px-3 py-1.5 text-sm text-muted-foreground">
               <StatusDot tone="pending" />

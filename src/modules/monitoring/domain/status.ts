@@ -1,4 +1,5 @@
 import { needsAttention, worstTone, escalationFor, type EscalationLevel, type Tone } from "@/shared/domain/status";
+import { t } from "@/shared/i18n";
 import { DAILY_PARAMETERS, PARAMETERS } from "./parameters";
 import type { FollowUp, ParameterId, ParameterStatus, Reading } from "./types";
 
@@ -8,15 +9,18 @@ export function activeParameterIds(astronautId: string, followUps: FollowUp[]): 
   return [...DAILY_PARAMETERS, ...Array.from(new Set(extra))];
 }
 
+/** Estado de un parámetro, con los textos ya en el idioma activo (se calcula al mostrar, no se guarda). */
 export function parameterStatus(id: ParameterId, readings: Reading[]): ParameterStatus {
   const def = PARAMETERS[id];
+  const label = t(def.label);
+  const normalText = t(def.normalText);
   const history = readings.filter((r) => r.parameterId === id).sort((a, b) => a.at.localeCompare(b.at));
   const latest = history.at(-1);
   if (!latest) {
-    return { id, label: def.label, tone: "pending", plain: "Sin datos", detail: "", normalText: def.normalText, history };
+    return { id, label, tone: "pending", plain: t("Sin datos"), detail: "", normalText, history };
   }
   const ev = def.evaluate(latest);
-  return { id, label: def.label, ...ev, detail: def.format(latest), normalText: def.normalText, latest, history };
+  return { id, label, tone: ev.tone, plain: t(ev.plain), detail: def.format(latest), normalText, latest, history };
 }
 
 export interface HealthSummary {
@@ -48,10 +52,10 @@ export function summarizeHealth(astronautId: string, readings: Reading[], follow
   const tone: Tone = measured.length === 0 ? "pending" : worstTone(measured.map((s) => s.tone));
   const headline =
     attention.length === 0
-      ? "Todo en rango"
+      ? t("Todo en rango")
       : attention.length === 1
         ? `${attention[0].label}: ${attention[0].plain.toLowerCase()}`
-        : `Lo más urgente: ${attention[0].label.toLowerCase()}`;
+        : t("Lo más urgente: {what}", { what: attention[0].label.toLowerCase() });
   return {
     statuses,
     attention,

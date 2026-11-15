@@ -4,7 +4,9 @@ import { useMemo } from "react";
 import Link from "next/link";
 import { Footprints, House } from "lucide-react";
 import { cn } from "@/shared/lib/cn";
-import { formatDuration, formatNumber } from "@/shared/lib/format";
+import { formatDuration, formatNumber, formatWeekdayTime } from "@/shared/lib/format";
+// `t` ya es el nombre de cada fila del tablero: la función de traducción se usa como `tr`.
+import { t as tr, tn } from "@/shared/i18n";
 import { useNow } from "@/shared/lib/use-now";
 import { TONE_CLASSES, TONE_LABEL, TONE_RANK, type Tone } from "@/shared/domain/status";
 import { LiveBadge, PlainValue, StatusDot, StatusPill } from "@/shared/components/status";
@@ -63,38 +65,38 @@ function groupAndSort(items: Triage[]) {
 /** Motivo en una línea: lo que hay que saber de esta persona ahora. */
 function reasonOf(t: Triage): string {
   if (t.kind === "interior") return t.health.headline;
-  return t.snapshot.alert ? t.snapshot.alert.text.split(".")[0] : "Todo en rango";
+  return t.snapshot.alert ? tr(t.snapshot.alert.text).split(".")[0] : tr("Todo en rango");
 }
 
 /** Próximo paso concreto. Siempre hay uno, también cuando todo está bien. */
 function actionOf(t: Triage): string {
   if (t.kind === "exterior") {
-    if (!t.snapshot.alert) return "Seguir con el plan";
-    const rest = t.snapshot.alert.text.split(".").slice(1).join(".").trim();
-    return rest || TONE_LABEL[t.tone];
+    if (!t.snapshot.alert) return tr("Seguir con el plan");
+    const rest = tr(t.snapshot.alert.text).split(".").slice(1).join(".").trim();
+    return rest || tr(TONE_LABEL[t.tone]);
   }
   const h = t.health;
-  if (h.attention.length > 0) return t.tone === "bad" ? "Avisar a la tripulación" : "Seguir las indicaciones de su ficha";
-  if (h.missing.length > 0) return "Completar los registros de hoy";
-  return "Seguir con la rutina";
+  if (h.attention.length > 0) return t.tone === "bad" ? tr("Avisar a la tripulación") : tr("Seguir las indicaciones de su ficha");
+  if (h.missing.length > 0) return tr("Completar los registros de hoy");
+  return tr("Seguir con la rutina");
 }
 
 export function CrewBoard() {
   const triage = useCrewTriage();
   const groups = groupAndSort(triage);
   return (
-    <section aria-label="Tripulación" className="flex flex-col gap-8">
+    <section aria-label={tr("Tripulación")} className="flex flex-col gap-8">
       <div className={cn("hidden gap-6 px-6 text-xs font-semibold uppercase tracking-wider text-muted-foreground lg:grid", LG_COLS)}>
-        <span>Astronauta</span>
-        <span>Estado</span>
-        <span>Parámetros</span>
-        <span>Qué hacer</span>
+        <span>{tr("Astronauta")}</span>
+        <span>{tr("Estado")}</span>
+        <span>{tr("Parámetros")}</span>
+        <span>{tr("Qué hacer")}</span>
       </div>
       {groups.map((g) => (
         <CrewGroup key={g.location} location={g.location} items={g.items} />
       ))}
       <p className="text-xs text-muted-foreground">
-        Fotos: NASA (dominio público). Nombres y datos de salud ficticios; no representan a las personas retratadas.
+        {tr("Fotos: NASA (dominio público). Nombres y datos de salud ficticios; no representan a las personas retratadas.")}
       </p>
     </section>
   );
@@ -113,15 +115,15 @@ function CrewGroup({ location, items }: { location: Location; items: Triage[] })
           <Icon aria-hidden className="size-5" />
         </span>
         <h2 id={headingId} className="text-xl font-semibold">
-          {label.group}
+          {tr(label.group)}
         </h2>
         <span className="text-sm text-muted-foreground">
-          {items.length} {items.length === 1 ? "astronauta" : "astronautas"}
+          {tn(items.length, "{n} astronauta", "{n} astronautas")}
         </span>
         <span className="ml-auto flex gap-2">
-          {bad > 0 && <StatusPill tone="bad" label={`${bad} en alerta`} />}
-          {warn > 0 && <StatusPill tone="warn" label={`${warn} en atención`} />}
-          {bad === 0 && warn === 0 && <StatusPill tone="ok" label="Todo normal" />}
+          {bad > 0 && <StatusPill tone="bad" label={tr("{n} en alerta", { n: bad })} />}
+          {warn > 0 && <StatusPill tone="warn" label={tr("{n} en atención", { n: warn })} />}
+          {bad === 0 && warn === 0 && <StatusPill tone="ok" label={tr("Todo normal")} />}
         </span>
       </header>
       <div className="flex flex-col gap-3">
@@ -146,7 +148,7 @@ function Who({ a, tone, live, nameAsLink }: { a: Astronaut; tone: Tone; live?: b
     <span className="flex items-center gap-4">
       <CrewAvatar name={a.name} photo={a.photo} tone={tone} />
       <span className="flex min-w-0 flex-col gap-1">
-        {tone === "bad" && <span className="sr-only">Alerta crítica.</span>}
+        {tone === "bad" && <span className="sr-only">{tr("Alerta crítica.")}</span>}
         {nameAsLink ? (
           // El enlace se estira a toda la tarjeta (after:inset-0): no se pueden anidar <a>, y la fila tiene el botón de Mapa.
           <Link
@@ -158,9 +160,9 @@ function Who({ a, tone, live, nameAsLink }: { a: Astronaut; tone: Tone; live?: b
         ) : (
           <span className="font-display text-xl font-semibold">{a.name}</span>
         )}
-        <span className="text-sm text-muted-foreground">{a.role}</span>
+        <span className="text-sm text-muted-foreground">{tr(a.role)}</span>
         {basicFactsLine(a) && <span className="text-xs text-muted-foreground">{basicFactsLine(a)}</span>}
-        {live && <LiveBadge label="EN VIVO · traje" />}
+        {live && <LiveBadge label={tr("EN VIVO · traje")} />}
       </span>
     </span>
   );
@@ -182,7 +184,7 @@ function InteriorRow({ t }: { t: Extract<Triage, { kind: "interior" }> }) {
         {n === 0 ? (
           <span className="flex items-center gap-2 text-sm font-semibold text-ok-strong">
             <StatusDot tone="ok" />
-            {measured}/{measured} en rango
+            {tr("{n}/{n} en rango", { n: measured })}
           </span>
         ) : (
           // Solo el indicador: el detalle de cada parámetro está en la ficha (la fila entera es el enlace).
@@ -191,7 +193,7 @@ function InteriorRow({ t }: { t: Extract<Triage, { kind: "interior" }> }) {
               {n}
               <span className="text-lg"> / {h.total}</span>
             </span>
-            <span className="text-xs font-semibold">a atender</span>
+            <span className="text-xs font-semibold">{tr("a atender")}</span>
           </span>
         )}
         {(h.followUpCount > 0 || h.missing.length > 0 || a.nextEva) && (
@@ -199,13 +201,13 @@ function InteriorRow({ t }: { t: Extract<Triage, { kind: "interior" }> }) {
             {h.missing.length > 0 && (
               <span className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
                 <StatusDot tone="pending" className="size-2" />
-                Sin datos hoy: {h.missing.map((s) => s.label.toLowerCase()).join(", ")}
+                {tr("Sin datos hoy: {list}", { list: h.missing.map((s) => s.label.toLowerCase()).join(", ") })}
               </span>
             )}
-            {h.followUpCount > 0 && <span className="text-xs text-muted-foreground">Incluye {h.followUpCount} de seguimiento post-salida</span>}
+            {h.followUpCount > 0 && <span className="text-xs text-muted-foreground">{tr("Incluye {n} de seguimiento post-salida", { n: h.followUpCount })}</span>}
             {a.nextEva && (
               <span className="text-xs text-muted-foreground">
-                Próxima EVA: {new Date(a.nextEva.at).toLocaleString("es-AR", { weekday: "short", hour: "2-digit", minute: "2-digit" })}
+                {tr("Próxima EVA: {when}", { when: formatWeekdayTime(a.nextEva.at) })}
               </span>
             )}
           </span>
@@ -223,8 +225,8 @@ function ExteriorRow({ t }: { t: Extract<Triage, { kind: "exterior" }> }) {
   const action = actionOf(t);
   const rad = snapshot.radiation;
   const tiles = [
-    ...[pressure, hr, temp].map((c) => ({ id: c.id, label: c.label, tone: c.tone, plain: c.plain, detail: `${formatNumber(c.value, c.decimals)} ${c.unit}` })),
-    ...(rad ? [{ id: "radiation", label: "Radiación", tone: rad.tone, plain: rad.plain, detail: `${formatNumber(rad.rateUSvH)} µSv/h` }] : []),
+    ...[pressure, hr, temp].map((c) => ({ id: c.id, label: tr(c.label), tone: c.tone, plain: tr(c.plain), detail: `${formatNumber(c.value, c.decimals)} ${tr(c.unit)}` })),
+    ...(rad ? [{ id: "radiation", label: tr("Radiación"), tone: rad.tone, plain: tr(rad.plain), detail: `${formatNumber(rad.rateUSvH)} µSv/h` }] : []),
   ];
   return (
     <div className={cn(ROW, rowFrame(tone), "relative cursor-pointer hover:border-primary")}>
@@ -233,7 +235,8 @@ function ExteriorRow({ t }: { t: Extract<Triage, { kind: "exterior" }> }) {
         <StatusPill tone={tone} />
         <span className="text-sm">{headline}</span>
         <span className="text-xs text-muted-foreground">
-          {partner && <>Con {partner.name} · </>}Volver en {formatDuration(snapshot.returnAtS - snapshot.elapsedS)}
+          {partner && <>{tr("Con {name}", { name: partner.name })} · </>}
+          {tr("Volver en {time}", { time: formatDuration(snapshot.returnAtS - snapshot.elapsedS) })}
         </span>
       </span>
       <span className="grid grid-cols-2 gap-2 xl:grid-cols-4">
@@ -252,7 +255,7 @@ function ExteriorRow({ t }: { t: Extract<Triage, { kind: "exterior" }> }) {
           href={`/astronautas/${a.id}/mapa`}
           className="relative z-10 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
         >
-          {formatNumber(distanceKm, 2)} km · Mapa →
+          {formatNumber(distanceKm, 2)} km · {tr("Mapa")} →
         </Link>
         <span className={cn("text-sm font-semibold", tone === "bad" && "text-bad-strong")}>{action}</span>
       </span>

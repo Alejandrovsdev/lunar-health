@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useAppStore } from "@/core/store";
 import { cn } from "@/shared/lib/cn";
 import { formatDay } from "@/shared/lib/format";
+import { t, t as tr } from "@/shared/i18n";
 import { TONE_CLASSES, TONE_HEX, TONE_LABEL, needsAttention, worstTone, type Tone } from "@/shared/domain/status";
 import { PlainValue, StatusDot, StatusPill } from "@/shared/components/status";
 import { SectionLabel } from "@/shared/components/page-header";
@@ -52,10 +53,10 @@ export function BodyMap({ astronautId, labPanels = [] }: { astronautId: string; 
 
   return (
     <div className="grid gap-5 lg:grid-cols-[minmax(0,560px)_1fr]">
-      <section aria-label="Figura del cuerpo" className="flex flex-col gap-3 rounded-2xl border bg-card p-4">
+      <section aria-label={t("Figura del cuerpo")} className="flex flex-col gap-3 rounded-2xl border bg-card p-4">
         <BodyFigure zones={zones} selected={sel} sex={sex} onSelect={setSel} />
         {/* En pantallas chicas las etiquetas de la figura quedan muy chicas: lista equivalente. */}
-        <div role="group" aria-label="Zonas del cuerpo" className="grid grid-cols-2 gap-2 lg:hidden">
+        <div role="group" aria-label={t("Zonas del cuerpo")} className="grid grid-cols-2 gap-2 lg:hidden">
           {zones.map((z, i) => (
             <button
               key={z.id}
@@ -67,7 +68,7 @@ export function BodyMap({ astronautId, labPanels = [] }: { astronautId: string; 
                 i === sel ? "border-primary bg-accent" : "border-border bg-card",
               )}
             >
-              <span className="text-sm font-semibold">{z.short}</span>
+              <span className="text-sm font-semibold">{t(z.short)}</span>
               <span className={cn("flex items-center gap-1.5 text-xs font-semibold", TONE_CLASSES[z.tone].strong)}>
                 <StatusDot tone={z.tone} className="size-2" />
                 {zoneStatusText(z)}
@@ -88,7 +89,7 @@ function rank(z: ZoneState) {
 }
 
 function zoneStatusText(z: ZoneState) {
-  return z.issues > 0 ? `${TONE_LABEL[z.tone]} · ${z.issues}` : TONE_LABEL[z.tone];
+  return z.issues > 0 ? `${t(TONE_LABEL[z.tone])} · ${z.issues}` : t(TONE_LABEL[z.tone]);
 }
 
 /* ───────────────────────── Figura ───────────────────────── */
@@ -144,7 +145,7 @@ function BodyFigure({ zones, selected, sex, onSelect }: { zones: ZoneState[]; se
       viewBox={viewBox}
       className="h-auto w-full"
       role="group"
-      aria-label={`Figura ${sex === "female" ? "femenina" : "masculina"}: cada zona tiene el color y el texto de su estado`}
+      aria-label={sex === "female" ? t("Figura femenina: cada zona tiene el color y el texto de su estado") : t("Figura masculina: cada zona tiene el color y el texto de su estado")}
     >
       <defs>
         {/* Halo clínico por estado: intenso en el centro y se desvanece hacia afuera. */}
@@ -243,7 +244,7 @@ function ZoneLeader({ zone: z, active, onSelect, onHover }: { zone: ZoneState; a
       />
       <rect x={left ? card.x + CARD_W - 9 : card.x + 4} y={card.y + 7} width={5} height={CARD_H - 14} rx={2.5} fill={TONE_HEX[z.tone]} />
       <text x={left ? textX - 4 : textX + 4} y={card.y + 20} textAnchor={anchor} className="fill-foreground font-sans text-[14.5px] font-semibold">
-        {z.short}
+        {t(z.short)}
       </text>
       <text x={left ? textX - 4 : textX + 4} y={card.y + 37} textAnchor={anchor} className="font-sans text-[13px] font-semibold" fill={toneTextHex(z.tone)}>
         {zoneStatusText(z)}
@@ -275,7 +276,7 @@ function ZoneHotspot({
       role="button"
       tabIndex={0}
       aria-pressed={selected}
-      aria-label={`${z.name}: ${zoneStatusText(z)}`}
+      aria-label={`${t(z.name)}: ${zoneStatusText(z)}`}
       onClick={onSelect}
       onMouseEnter={() => onHover(true)}
       onMouseLeave={() => onHover(false)}
@@ -319,10 +320,10 @@ function Legend() {
       {items.map((t) => (
         <span key={t} className="flex items-center gap-1.5">
           <StatusDot tone={t} />
-          {TONE_LABEL[t]}
+          {tr(TONE_LABEL[t])}
         </span>
       ))}
-      <span className="basis-full">Tocá una zona o su tarjeta para ver el detalle. Cada línea une la categoría con todos sus puntos.</span>
+      <span className="basis-full">{tr("Tocá una zona o su tarjeta para ver el detalle. Cada línea une la categoría con todos sus puntos.")}</span>
     </div>
   );
 }
@@ -335,14 +336,14 @@ function ZoneDetail({ zone: z, astronautId }: { zone: ZoneState; astronautId: st
   const sorted = [...z.statuses].sort((a, b) => toneRank(b.tone) - toneRank(a.tone));
 
   return (
-    <section aria-live="polite" aria-label={`Detalle: ${z.name}`} className="flex flex-col gap-5 rounded-2xl border bg-card p-6">
+    <section aria-live="polite" aria-label={t("Detalle: {zone}", { zone: t(z.name) })} className="flex flex-col gap-5 rounded-2xl border bg-card p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-3xl font-bold">{z.name}</h2>
+        <h2 className="text-3xl font-bold">{t(z.name)}</h2>
         <StatusPill tone={z.tone} label={zoneStatusText(z)} className="text-sm" />
       </div>
 
       {z.labs.length > 0 && (
-        <Block title="Estudios periódicos" link={{ href: `${base}/resultados`, label: "Ver estudios completos" }}>
+        <Block title={t("Estudios periódicos")} link={{ href: `${base}/resultados`, label: t("Ver estudios completos") }}>
           <ul className={cn("grid gap-2", z.labs.length > 1 ? "sm:grid-cols-2" : "")}>
             {z.labs.map((p) => {
               const out = p.rows.filter((r) => r.tone !== "ok");
@@ -350,21 +351,21 @@ function ZoneDetail({ zone: z, astronautId }: { zone: ZoneState; astronautId: st
               return (
                 <li key={p.id} className="flex flex-col gap-1.5 rounded-xl border px-4 py-3">
                   <span className="flex flex-wrap items-baseline justify-between gap-2">
-                    <span className="font-semibold">{p.name}</span>
-                    <span className="text-xs text-muted-foreground">Último: {p.last}</span>
+                    <span className="font-semibold">{t(p.name)}</span>
+                    <span className="text-xs text-muted-foreground">{t("Último: {when}", { when: t(p.last) })}</span>
                   </span>
                   {out.map((r) => (
                     <span key={r.label} className="flex flex-wrap items-center gap-x-2 text-sm">
                       <StatusDot tone={r.tone} />
-                      <span>{r.label}:</span>
-                      <strong className={TONE_CLASSES[r.tone].strong}>{r.plain}</strong>
-                      {r.detail && <span className="text-xs text-muted-foreground">{r.detail}</span>}
+                      <span>{t(r.label)}:</span>
+                      <strong className={TONE_CLASSES[r.tone].strong}>{t(r.plain)}</strong>
+                      {r.detail && <span className="text-xs text-muted-foreground">{t(r.detail)}</span>}
                     </span>
                   ))}
                   {okCount > 0 && (
                     <span className="flex items-center gap-2 text-sm text-ok-strong">
                       <StatusDot tone="ok" />
-                      {out.length === 0 ? "Todo en rango" : `${okCount} más en rango`}
+                      {out.length === 0 ? t("Todo en rango") : t("{n} más en rango", { n: okCount })}
                     </span>
                   )}
                 </li>
@@ -375,19 +376,19 @@ function ZoneDetail({ zone: z, astronautId }: { zone: ZoneState; astronautId: st
       )}
 
       {z.statuses.length > 0 && (
-        <Block title="Indicadores diarios" link={{ href: `${base}/evolucion`, label: "Ver evolución" }}>
+        <Block title={t("Indicadores diarios")} link={{ href: `${base}/evolucion`, label: t("Ver evolución") }}>
           <div className="grid gap-3 sm:grid-cols-2">
             {sorted.map((s) => (
               <IndicatorCard key={s.id} status={s} />
             ))}
           </div>
           <p className="text-xs text-muted-foreground">
-            Franja verde: normal · línea ámbar: atención · línea roja: alerta
+            {t("Franja verde: normal · línea ámbar: atención · línea roja: alerta")}
           </p>
         </Block>
       )}
 
-      {z.statuses.length === 0 && z.labs.length === 0 && <p className="text-muted-foreground">Sin indicadores registrados para esta zona.</p>}
+      {z.statuses.length === 0 && z.labs.length === 0 && <p className="text-muted-foreground">{t("Sin indicadores registrados para esta zona.")}</p>}
     </section>
   );
 }
@@ -407,19 +408,19 @@ function IndicatorCard({ status: s }: { status: ParameterStatus }) {
         {s.label}
         <StatusDot tone={s.tone} />
       </span>
-      <PlainValue tone={s.tone} plain={s.plain} detail={s.detail ? `${s.detail} · normal: ${s.normalText}` : `Normal: ${s.normalText}`} size="sm" />
+      <PlainValue tone={s.tone} plain={s.plain} detail={s.detail ? `${s.detail} · ${t("normal: {range}", { range: s.normalText })}` : t("Normal: {range}", { range: s.normalText })} size="sm" />
       {s.history.length > 0 ? (
         <div className="rounded-lg bg-card">
           <TrendChart status={s} height={92} compact />
         </div>
       ) : (
         <div className="flex h-[92px] items-center justify-center rounded-lg bg-card text-xs text-muted-foreground">
-          Sin datos todavía
+          {t("Sin datos todavía")}
         </div>
       )}
       {s.latest && (
         <span className="text-xs text-muted-foreground">
-          Último: {formatDay(s.latest.at)} · {SOURCE_LABEL[s.latest.source] ?? s.latest.source}
+          {t("Último: {time} · {source}", { time: formatDay(s.latest.at), source: t(SOURCE_LABEL[s.latest.source] ?? s.latest.source) })}
         </span>
       )}
     </div>

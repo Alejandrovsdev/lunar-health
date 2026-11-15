@@ -1,5 +1,6 @@
 import { cn } from "@/shared/lib/cn";
 import { TONE_CLASSES, TONE_LABEL, type Tone } from "@/shared/domain/status";
+import { tx } from "@/shared/i18n";
 
 export function StatusDot({ tone, className }: { tone: Tone; className?: string }) {
   return <span aria-hidden className={cn("inline-block size-2.5 shrink-0 rounded-full", TONE_CLASSES[tone].dot, className)} />;
@@ -10,7 +11,7 @@ export function StatusPill({ tone, label, className }: { tone: Tone; label?: str
   return (
     <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold", c.soft, c.strong, className)}>
       <StatusDot tone={tone} className="size-2" />
-      {label ?? TONE_LABEL[tone]}
+      {tx(label ?? TONE_LABEL[tone])}
     </span>
   );
 }
@@ -36,9 +37,9 @@ export function PlainValue({
   return (
     <span className={cn("flex flex-col", className)}>
       <span className={cn("font-display font-bold leading-tight", sizes[size], tone === "ok" ? "text-foreground" : TONE_CLASSES[tone].strong)}>
-        {plain}
+        {tx(plain)}
       </span>
-      {detail && <span className="text-sm text-muted-foreground">{detail}</span>}
+      {detail && <span className="text-sm text-muted-foreground">{tx(detail)}</span>}
     </span>
   );
 }
@@ -47,7 +48,7 @@ export function LiveBadge({ label }: { label: string }) {
   return (
     <span className="inline-flex items-center gap-1.5 rounded-full bg-bad-soft px-2.5 py-1 text-xs font-bold text-bad-strong">
       <span aria-hidden className="size-2 animate-live rounded-full bg-bad" />
-      {label}
+      {tx(label)}
     </span>
   );
 }

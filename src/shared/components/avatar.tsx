@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { cn } from "@/shared/lib/cn";
 import { TONE_CLASSES, type Tone } from "@/shared/domain/status";
+import { t } from "@/shared/i18n";
 
 function initials(name: string) {
   return name
@@ -31,7 +32,7 @@ export function CrewAvatar({ name, photo, tone, className }: { name: string; pho
     >
       {showPhoto ? (
         // eslint-disable-next-line @next/next/no-img-element -- foto local pequeña, no requiere optimización
-        <img src={photo} alt={`Foto de ${name}`} className="size-full object-cover" loading="lazy" onError={() => setFailed(true)} />
+        <img src={photo} alt={t("Foto de {name}", { name })} className="size-full object-cover" loading="lazy" onError={() => setFailed(true)} />
       ) : (
         <span aria-label={name} className="font-display text-2xl font-bold text-secondary-foreground">
           {initials(name)}

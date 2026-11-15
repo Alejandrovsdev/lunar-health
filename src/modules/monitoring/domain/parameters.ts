@@ -1,5 +1,6 @@
 import { formatDay, formatNumber, formatTime, isSameDay } from "@/shared/lib/format";
 import type { Tone } from "@/shared/domain/status";
+import { t } from "@/shared/i18n";
 import { intakeDayProgress } from "@/shared/domain/intake-day";
 import type { Evaluation, ParameterId, Reading, DailyParameterId } from "./types";
 
@@ -7,6 +8,9 @@ import type { Evaluation, ParameterId, Reading, DailyParameterId } from "./types
  * Catálogo de parámetros.
  * Umbrales: referencias clínicas generales, a validar. Tabla completa con fuentes: docs/umbrales-y-fuentes.md.
  * Fuentes NASA: Standard Measures (nlsp.nasa.gov) y riesgos HRP.
+ *
+ * Idioma: los textos fijos (label, why, action, source…) están en español y se traducen donde se muestran.
+ * `format` arma el texto al momento, así que ya lo devuelve en el idioma activo.
  */
 export interface ParameterDefinition {
   id: ParameterId;
@@ -46,10 +50,10 @@ function dailyIntake(ratio: number, at: string, badBelow = 0.75): Evaluation {
 /** Cuándo corresponde un total diario: "hasta las 10:30" (hoy, en curso), "ayer" o "el 3 nov". */
 function intakeWhen(at: string): string {
   const now = new Date();
-  if (isSameDay(at, now)) return intakeDayProgress(at) < 1 ? `hasta las ${formatTime(at)}` : "hoy";
+  if (isSameDay(at, now)) return intakeDayProgress(at) < 1 ? t("hasta las {time}", { time: formatTime(at) }) : t("hoy");
   const yesterday = new Date(now);
   yesterday.setDate(now.getDate() - 1);
-  return isSameDay(at, yesterday) ? "ayer" : `el ${formatDay(at)}`;
+  return isSameDay(at, yesterday) ? t("ayer") : t("el {day}", { day: formatDay(at) });
 }
 
 export const PARAMETERS: Record<ParameterId, ParameterDefinition> = {
@@ -74,7 +78,7 @@ export const PARAMETERS: Record<ParameterId, ParameterDefinition> = {
     label: "Ánimo",
     unit: "/ 5",
     normalText: "4 o 5",
-    format: (r) => `${r.value} de 5`,
+    format: (r) => t("{v} de 5", { v: r.value }),
     evaluate: ({ value: v }) => (v <= 2 ? e("bad", "Mal") : v < 4 ? e("warn", "Regular") : e("ok", "Bien")),
     chart: { min: 1, max: 5, bandLow: 4, bandHigh: 5, warnAt: 4, badAt: 2 },
     why: "El aislamiento y el encierro aumentan el estrés. La NASA mide el afecto positivo y negativo en todos sus análogos de aislamiento.",
@@ -90,7 +94,7 @@ export const PARAMETERS: Record<ParameterId, ParameterDefinition> = {
     label: "Convivencia",
     unit: "/ 5",
     normalText: "4 o 5",
-    format: (r) => `${formatNumber(r.value, 1)} de 5`,
+    format: (r) => t("{v} de 5", { v: formatNumber(r.value, 1) }),
     evaluate: ({ value: v }) => (v < 2.5 ? e("bad", "Mala") : v < 3.75 ? e("warn", "Regular") : e("ok", "Buena")),
     chart: { min: 1, max: 5, bandLow: 4, bandHigh: 5, warnAt: 3.75, badAt: 2.5 },
     why: "En una base chica, los conflictos sin resolver afectan el sueño, el ánimo y el trabajo en equipo.",
@@ -152,7 +156,7 @@ export const PARAMETERS: Record<ParameterId, ParameterDefinition> = {
     label: "Pulso en reposo",
     unit: "lpm",
     normalText: "60 a 100 lpm",
-    format: (r) => `${r.value} lpm`,
+    format: (r) => `${r.value} ${t("lpm")}`,
     evaluate: ({ value: v }) =>
       v < 50 || v > 120 ? e("bad", v < 50 ? "Muy bajo" : "Muy alto") : v < 60 ? e("warn", "Algo bajo") : v > 100 ? e("warn", "Algo alto") : e("ok", "Normal"),
     chart: { min: 40, max: 130, bandLow: 60, bandHigh: 100, warnAt: 100, badAt: 120 },
@@ -193,21 +197,21 @@ export const PARAMETERS: Record<ParameterId, ParameterDefinition> = {
     label: "Test cognitivo",
     unit: "ms",
     normalText: "menos de 300 ms",
-    format: (r) => `${r.value} ms · ${r.value2 ?? 0} lapsos`,
+    format: (r) => t("{ms} ms · {n} lapsos", { ms: r.value, n: r.value2 ?? 0 }),
     evaluate: ({ value: v, value2: lapses = 0 }) =>
-      v >= 360 || lapses >= 3 ? e("bad", "Muy lento") : v >= 300 || lapses >= 2 ? e("warn", "Más lento") : e("ok", "Normal"),
+      v >= 360 || lapses >= 4 ? e("bad", "Muy lento") : v >= 300 || lapses >= 2 ? e("warn", "Más lento") : e("ok", "Normal"),
     chart: { min: 200, max: 420, bandLow: 200, bandHigh: 299, warnAt: 300, badAt: 360 },
     why: "La NASA mide la cognición en todas sus tripulaciones. El sueño corto y el estrés te hacen más lento.",
     action: { warn: "Repetilo después de descansar.", bad: "No hagas tareas críticas hasta repetirlo y avisá a la tripulación." },
     source: "Standard Measures · Cognition (vigilancia psicomotora, PVT)",
-    how: "Test de reacción en pantalla, 5 intentos",
+    how: "Test de reacción en pantalla, 10 intentos",
   },
   stress: {
     id: "stress",
     label: "Estrés percibido",
     unit: "/ 56",
     normalText: "0 a 18 (bajo)",
-    format: (r) => `${r.value} de 56`,
+    format: (r) => t("{v} de 56", { v: r.value }),
     evaluate: ({ value: v }) => (v >= 38 ? e("bad", "Alto") : v >= 19 ? e("warn", "Moderado") : e("ok", "Bajo")),
     chart: { min: 0, max: 56, bandLow: 0, bandHigh: 18, warnAt: 19, badAt: 38 },
     why: "La Escala de Estrés Percibido (PSS-14) mide cuánto se evalúan como estresantes las situaciones del último mes. Los puntajes altos sostenidos afectan el sueño, el ánimo y las decisiones.",
@@ -223,7 +227,7 @@ export const PARAMETERS: Record<ParameterId, ParameterDefinition> = {
     label: "Descompresión (post-salida)",
     unit: "",
     normalText: "sin síntomas",
-    format: (r) => (r.value === 0 ? "sin síntomas" : `${r.value} síntoma(s)`),
+    format: (r) => (r.value === 0 ? t("sin síntomas") : t("{n} síntoma(s)", { n: r.value })),
     evaluate: ({ value: v }) => (v >= 2 ? e("bad", "Síntomas") : v === 1 ? e("warn", "Un síntoma") : e("ok", "Sin síntomas")),
     chart: { min: 0, max: 3, bandLow: 0, bandHigh: 0.3, warnAt: 1, badAt: 2 },
     why: "Al bajar de presión pueden formarse burbujas de nitrógeno: dolor en articulaciones, piel o síntomas neurológicos.",
@@ -236,7 +240,7 @@ export const PARAMETERS: Record<ParameterId, ParameterDefinition> = {
     label: "Ojos y respiración (post-salida)",
     unit: "",
     normalText: "sin irritación",
-    format: (r) => (r.value === 0 ? "sin irritación" : `intensidad ${r.value} de 3`),
+    format: (r) => (r.value === 0 ? t("sin irritación") : t("intensidad {n} de 3", { n: r.value })),
     evaluate: ({ value: v }) => (v >= 2 ? e("bad", "Irritación fuerte") : v === 1 ? e("warn", "Irritación leve") : e("ok", "Sin irritación")),
     chart: { min: 0, max: 3, bandLow: 0, bandHigh: 0.3, warnAt: 1, badAt: 2 },
     why: "El polvo lunar es filoso y se pega al traje: al entrar irrita ojos y vías respiratorias.",
@@ -265,7 +269,7 @@ export const PARAMETERS: Record<ParameterId, ParameterDefinition> = {
     label: "Alimentación",
     unit: "%",
     normalText: "90 a 125 % de tus calorías",
-    format: (r) => `${formatNumber(r.value2 ?? 0)} kcal · ${r.value} % de la meta ${intakeWhen(r.at)}`,
+    format: (r) => t("{kcal} kcal · {pct} % de la meta {when}", { kcal: formatNumber(r.value2 ?? 0), pct: r.value, when: intakeWhen(r.at) }),
     evaluate: (r) => (r.value > 125 ? e("warn", "De más") : dailyIntake(r.value / 90, r.at, 75 / 90)),
     chart: { min: 40, max: 140, bandLow: 90, bandHigh: 125, warnAt: 90, badAt: 75 },
     why: "Comer menos de lo que se gasta acelera la pérdida de músculo y hueso, y en las misiones casi todos comen de menos. La comida envasada además trae poca fibra y mucha sal.",

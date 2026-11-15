@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { formatNumber } from "@/shared/lib/format";
+import { t } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import { TONE_CLASSES } from "@/shared/domain/status";
 import { ConsumableRings, EvaTimeline, RadiationCard, SuitChartCard, useSuit } from "@/modules/telemetry";
@@ -19,19 +20,19 @@ export function ExteriorProfile({ astronaut }: { astronaut: Astronaut }) {
           href={`/astronautas/${astronaut.id}/mapa`}
           className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
         >
-          A {formatNumber(position.distanceKm, 2)} km de la base · Ver mapa →
+          {t("A {km} km de la base · Ver mapa →", { km: formatNumber(position.distanceKm, 2) })}
         </Link>
-        <span className="rounded-full border bg-card px-4 py-2 text-sm">Destino: {astronaut.eva?.destination}</span>
+        <span className="rounded-full border bg-card px-4 py-2 text-sm">{t("Destino: {place}", { place: t(astronaut.eva?.destination ?? "") })}</span>
       </div>
 
       {snapshot.alert && (
         <section role="status" className={cn("flex items-center gap-3 rounded-xl px-4 py-3", TONE_CLASSES[snapshot.alert.tone].soft)}>
-          <span className="rounded-full bg-warn px-2.5 py-1 text-xs font-bold text-white">{snapshot.alert.tone === "bad" ? "ALERTA" : "ATENCIÓN"}</span>
-          <span className={cn("text-base", TONE_CLASSES[snapshot.alert.tone].strong)}>{snapshot.alert.text}</span>
+          <span className="rounded-full bg-warn px-2.5 py-1 text-xs font-bold text-white">{snapshot.alert.tone === "bad" ? t("ALERTA") : t("ATENCIÓN")}</span>
+          <span className={cn("text-base", TONE_CLASSES[snapshot.alert.tone].strong)}>{t(snapshot.alert.text)}</span>
         </section>
       )}
 
-      <section aria-label="Presión del traje y signos vitales en tiempo real" className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+      <section aria-label={t("Presión del traje y signos vitales en tiempo real")} className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         {snapshot.channels.map((c) => (
           <SuitChartCard key={c.id} channel={c} />
         ))}
@@ -39,7 +40,7 @@ export function ExteriorProfile({ astronaut }: { astronaut: Astronaut }) {
 
       <RadiationCard radiation={snapshot.radiation} priorMissionMSv={astronaut.radiationMSv} />
 
-      <section aria-label="Recursos del traje">
+      <section aria-label={t("Recursos del traje")}>
         <ConsumableRings items={snapshot.consumables} />
       </section>
 

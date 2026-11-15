@@ -3,13 +3,23 @@ import type { StressAnswers, WeeklyAnswers } from "./types";
 
 /* ---------- PVT (vigilancia psicomotora) ---------- */
 
-export const PVT_TRIALS = 5;
-export const PVT_LAPSE_MS = 335;
+/**
+ * PVT breve, con los criterios del PVT-B (Basner, Mollicone & Dinges, 2011):
+ * lapso = respuesta de más de 355 ms; falso inicio = respuesta antes del estímulo o en menos de 100 ms.
+ * 10 intentos para que un solo error no defina el resultado.
+ */
+export const PVT_TRIALS = 10;
+export const PVT_LAPSE_MS = 355;
+export const PVT_ANTICIPATION_MS = 100;
+/** Sin respuesta en este tiempo: cuenta como lapso con este valor. */
+export const PVT_TIMEOUT_MS = 1500;
 
 export function scorePvt(times: number[], falseStarts: number) {
   const avg = times.length ? Math.round(times.reduce((a, b) => a + b, 0) / times.length) : 0;
   const lapses = times.filter((t) => t > PVT_LAPSE_MS).length;
-  const tone: Tone = avg >= 360 || lapses >= 3 ? "bad" : avg >= 300 || lapses >= 2 ? "warn" : "ok";
+  // Errores = lapsos + falsos inicios (como el puntaje de desempeño del PVT).
+  const errors = lapses + falseStarts;
+  const tone: Tone = avg >= 360 || errors >= 4 ? "bad" : avg >= 300 || errors >= 2 ? "warn" : "ok";
   const plain = tone === "ok" ? "Normal" : tone === "warn" ? "Más lento" : "Muy lento";
   return { avg, lapses, falseStarts, tone, plain };
 }

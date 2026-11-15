@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { cn } from "@/shared/lib/cn";
+import { tx } from "@/shared/i18n";
 
 export function Label({ className, ...props }: React.LabelHTMLAttributes<HTMLLabelElement>) {
   return <label className={cn("text-base font-semibold", className)} {...props} />;
@@ -34,7 +35,7 @@ interface NumberFieldProps {
 export function NumberField({ id, label, hint, unit, value, onChange, step = 1, min, max }: NumberFieldProps) {
   return (
     <div className="flex flex-col gap-1.5">
-      <Label htmlFor={id}>{label}</Label>
+      <Label htmlFor={id}>{tx(label)}</Label>
       <div className="flex items-center gap-2">
         <Input
           id={id}
@@ -46,9 +47,9 @@ export function NumberField({ id, label, hint, unit, value, onChange, step = 1, 
           value={value}
           onChange={(e) => onChange(e.target.value === "" ? "" : Number(e.target.value))}
         />
-        {unit && <span className="shrink-0 text-sm text-muted-foreground">{unit}</span>}
+        {unit && <span className="shrink-0 text-sm text-muted-foreground">{tx(unit)}</span>}
       </div>
-      {hint && <span className="text-sm text-muted-foreground">{hint}</span>}
+      {hint && <span className="text-sm text-muted-foreground">{tx(hint)}</span>}
     </div>
   );
 }
@@ -74,7 +75,7 @@ interface ChoiceGroupProps<T extends string | number> {
 export function ChoiceGroup<T extends string | number>({ name, legend, options, value, onChange, columns }: ChoiceGroupProps<T>) {
   return (
     <fieldset className="flex flex-col gap-2">
-      <legend className="mb-2 text-base font-semibold">{legend}</legend>
+      <legend className="mb-2 text-base font-semibold">{tx(legend)}</legend>
       <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${columns ?? options.length}, minmax(0, 1fr))` }}>
         {options.map((opt) => {
           const id = `${name}-${opt.value}`;
@@ -90,8 +91,8 @@ export function ChoiceGroup<T extends string | number>({ name, legend, options, 
             >
               <input id={id} type="radio" name={name} className="sr-only" checked={checked} onChange={() => onChange(opt.value)} />
               {opt.media && <span className="mb-1">{opt.media}</span>}
-              <span className="text-base font-semibold">{opt.label}</span>
-              {opt.sublabel && <span className="text-xs text-muted-foreground">{opt.sublabel}</span>}
+              <span className="text-base font-semibold">{tx(opt.label)}</span>
+              {opt.sublabel && <span className="text-xs text-muted-foreground">{tx(opt.sublabel)}</span>}
             </label>
           );
         })}
@@ -113,7 +114,7 @@ export function YesNo({ name, legend, value, onChange, hint }: { name: string; l
           { value: "si", label: "Sí" },
         ]}
       />
-      {hint && <span className="text-sm text-muted-foreground">{hint}</span>}
+      {hint && <span className="text-sm text-muted-foreground">{tx(hint)}</span>}
     </div>
   );
 }

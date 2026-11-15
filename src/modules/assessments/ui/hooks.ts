@@ -12,6 +12,10 @@ export interface TestStatus extends TestDefinition {
   state: TestState;
   last?: AssessmentResult;
   note: string;
+  /** Cuándo se hizo por última vez dentro del período vigente (si está hecho). */
+  doneAt?: string;
+  /** Hasta cuándo hay tiempo: "hoy", "esta semana", "este mes" o "antes de salir". */
+  due: string;
 }
 
 export function useLatestResult(astronautId: string, testId: TestId) {
@@ -35,18 +39,20 @@ export function useTestStatuses(astronautId: string): TestStatus[] {
       const l = last(t.id);
       if (t.frequency === "daily") {
         const doneToday = l && isSameDay(l.at, now);
-        return { ...t, last: l, state: doneToday ? "done" : "pending", note: doneToday ? `Hecho hoy · ${l!.plain}` : "Pendiente hoy" } as TestStatus;
+        return { ...t, last: l, due: "hoy", doneAt: doneToday ? l!.at : undefined, state: doneToday ? "done" : "pending", note: doneToday ? `Hecho hoy · ${l!.plain}` : "Pendiente hoy" } as TestStatus;
       }
       if (t.frequency === "weekly") {
         const at = l?.at ?? lastCohesion?.at;
         const fresh = at && now.getTime() - new Date(at).getTime() < 6 * 86400_000;
-        return { ...t, last: l, state: fresh ? "done" : "pending", note: fresh ? "Hecho esta semana" : "Pendiente esta semana" } as TestStatus;
+        return { ...t, last: l, due: "esta semana", doneAt: fresh ? at : undefined, state: fresh ? "done" : "pending", note: fresh ? "Hecho esta semana" : "Pendiente esta semana" } as TestStatus;
       }
       if (t.frequency === "monthly") {
         const fresh = l && now.getTime() - new Date(l.at).getTime() < 30 * 86400_000;
         return {
           ...t,
           last: l,
+          due: "este mes",
+          doneAt: fresh ? l!.at : undefined,
           state: fresh ? "done" : "pending",
           note: fresh ? `Hecho este mes · ${l!.plain}` : "Pendiente este mes",
         } as TestStatus;
@@ -56,6 +62,8 @@ export function useTestStatuses(astronautId: string): TestStatus[] {
       return {
         ...t,
         last: l,
+        due: "antes de salir",
+        doneAt: doneToday ? l!.at : undefined,
         state: doneToday ? "done" : "scheduled",
         note: doneToday ? `Hecho hoy · ${l!.plain}` : evaSoon ? "Antes de la salida de mañana" : "Antes de cada salida",
       } as TestStatus;

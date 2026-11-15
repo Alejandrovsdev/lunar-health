@@ -1,8 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { getLocale } from "@/shared/i18n";
 
-const VOICE_KEY = "lunar-health.tts.voice";
+/** La voz elegida se guarda por idioma: en español y en inglés se recuerdan por separado. */
+const voiceKey = () => `lunar-health.tts.voice.${getLocale()}`;
+/** Prefijo de idioma de las voces (es-AR, es-ES, es-US… / en-US, en-GB…). */
+const langPrefix = () => getLocale();
 const RATE_KEY = "lunar-health.tts.rate";
 
 export interface SpeechApi {
@@ -23,7 +27,8 @@ export interface SpeechApi {
 
 /**
  * Wrapper de la Web Speech API (speechSynthesis) para leer las preguntas de los tests en voz alta.
- * La elección de voz y velocidad queda guardada en localStorage.
+ * Usa por defecto una voz del idioma activo de la app (español o inglés) y pone esas voces primero.
+ * La elección de voz (por idioma) y la velocidad quedan guardadas en localStorage.
  */
 export function useSpeech(): SpeechApi {
   const [supported, setSupported] = useState(false);
@@ -41,15 +46,18 @@ export function useSpeech(): SpeechApi {
     const loadVoices = () => {
       const list = window.speechSynthesis.getVoices();
       if (!list.length) return;
-      const sorted = [...list].sort(
-        (a, b) => Number(b.lang.toLowerCase().startsWith("es")) - Number(a.lang.toLowerCase().startsWith("es")) || a.name.localeCompare(b.name),
-      );
+      const lang = langPrefix();
+      const matches = (v: SpeechSynthesisVoice) => v.lang.toLowerCase().startsWith(lang);
+      const sorted = [...list].sort((a, b) => Number(matches(b)) - Number(matches(a)) || a.name.localeCompare(b.name));
       setVoices(sorted);
       setVoiceURIState((prev) => {
-        if (prev && sorted.some((v) => v.voiceURI === prev)) return prev;
-        const saved = localStorage.getItem(VOICE_KEY);
-        if (saved && sorted.some((v) => v.voiceURI === saved)) return saved;
-        return sorted.find((v) => v.lang.toLowerCase().startsWith("es"))?.voiceURI ?? sorted[0]?.voiceURI ?? "";
+        // Solo se respeta una voz elegida si es del idioma activo: en EN nunca queda una voz en español.
+        const ok = (uri: string | null) => !!uri && sorted.some((v) => v.voiceURI === uri && matches(v));
+        if (ok(prev)) return prev;
+        const saved = localStorage.getItem(voiceKey());
+        if (ok(saved)) return saved!;
+        // Preferencia: voz local del idioma (funciona sin conexión) y después cualquiera del idioma.
+        return (sorted.find((v) => matches(v) && v.localService) ?? sorted.find(matches) ?? sorted[0])?.voiceURI ?? "";
       });
     };
 
@@ -66,7 +74,7 @@ export function useSpeech(): SpeechApi {
 
   const setVoiceURI = useCallback((uri: string) => {
     setVoiceURIState(uri);
-    localStorage.setItem(VOICE_KEY, uri);
+    localStorage.setItem(voiceKey(), uri);
   }, []);
 
   const setRate = useCallback((value: number) => {
@@ -88,6 +96,9 @@ export function useSpeech(): SpeechApi {
       if (voice) {
         utterance.voice = voice;
         utterance.lang = voice.lang;
+      } else {
+        // Sin voz cargada todavía: al menos que el navegador lea con el idioma correcto.
+        utterance.lang = getLocale() === "en" ? "en-US" : "es-AR";
       }
       utterance.rate = rate;
       utterance.onend = () => {

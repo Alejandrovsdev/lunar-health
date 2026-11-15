@@ -3,6 +3,7 @@
 import { Line, LineChart, ReferenceArea, ReferenceDot, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { cn } from "@/shared/lib/cn";
 import { formatNumber } from "@/shared/lib/format";
+import { t } from "@/shared/i18n";
 import { TONE_CLASSES, TONE_HEX } from "@/shared/domain/status";
 import { PlainValue, StatusDot, StatusPill } from "@/shared/components/status";
 import type { SuitChannel } from "../domain/suit";
@@ -14,12 +15,12 @@ const NOW_T = 59;
 /** Espacio a la derecha de "ahora": la línea vertical queda antes del final y se ve que la curva avanza hacia ella. */
 const X_DOMAIN: [number, number] = [0, NOW_T + 5];
 
-function agoLabel(t: number) {
-  const s = (NOW_T - t) * 10;
-  if (s === 0) return "Ahora";
+function agoLabel(idx: number) {
+  const s = (NOW_T - idx) * 10;
+  if (s === 0) return t("Ahora");
   const m = Math.floor(s / 60);
   const rest = s % 60;
-  return `Hace ${m > 0 ? `${m} min ` : ""}${rest > 0 ? `${rest} s` : ""}`.trim();
+  return t("Hace {time}", { time: `${m > 0 ? `${m} min ` : ""}${rest > 0 ? `${rest} s` : ""}`.trim() });
 }
 
 export function SuitChartCard({ channel }: { channel: SuitChannel }) {
@@ -30,16 +31,16 @@ export function SuitChartCard({ channel }: { channel: SuitChannel }) {
   return (
     <div className={cn("flex flex-col gap-2 rounded-xl border bg-card p-4", channel.primary && "border-2 border-primary")}>
       <div className="flex items-center justify-between">
-        <span className="font-semibold">{channel.label}</span>
+        <span className="font-semibold">{t(channel.label)}</span>
         <StatusPill tone={channel.tone} />
       </div>
       <PlainValue
         tone={channel.tone}
         size="lg"
-        plain={channel.plain}
-        detail={`${formatNumber(channel.value, channel.decimals)} ${channel.unit}`}
+        plain={t(channel.plain)}
+        detail={`${formatNumber(channel.value, channel.decimals)} ${t(channel.unit)}`}
       />
-      <div className="h-32 rounded-lg bg-muted" role="img" aria-label={`${channel.label}: ${channel.plain} en los últimos 10 minutos`}>
+      <div className="h-32 rounded-lg bg-muted" role="img" aria-label={t("{label}: {plain} en los últimos 10 minutos", { label: t(channel.label), plain: t(channel.plain) })}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={channel.history} margin={{ top: 18, right: 8, bottom: 6, left: 8 }}>
             <XAxis hide type="number" dataKey="t" domain={X_DOMAIN} />
@@ -51,7 +52,7 @@ export function SuitChartCard({ channel }: { channel: SuitChannel }) {
               x={NOW_T}
               stroke="#334155"
               strokeWidth={1.5}
-              label={{ value: "ahora", position: "top", fontSize: 11, fontWeight: 600, fill: "#334155" }}
+              label={{ value: t("ahora"), position: "top", fontSize: 11, fontWeight: 600, fill: "#334155" }}
             />
             <Line
               type="monotone"
@@ -73,8 +74,8 @@ export function SuitChartCard({ channel }: { channel: SuitChannel }) {
         </ResponsiveContainer>
       </div>
       <div className="flex justify-between text-xs text-muted-foreground">
-        <span title="Pasá el mouse por el gráfico para ver cada valor">Últimos 10 min → ahora</span>
-        <span>Atención: {warn.text}</span>
+        <span title={t("Pasá el mouse por el gráfico para ver cada valor")}>{t("Últimos 10 min → ahora")}</span>
+        <span>{t("Atención: {limit}", { limit: t(warn.text) })}</span>
       </div>
     </div>
   );
@@ -114,24 +115,24 @@ function SuitTooltip({ active, payload, channel }: TooltipProps & { channel: Sui
       <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{agoLabel(p.t)}</span>
       <span className="flex items-center gap-2">
         <StatusDot tone={p.tone} />
-        <span className={cn("font-display text-lg font-bold", p.tone === "ok" ? "text-foreground" : TONE_CLASSES[p.tone].strong)}>{p.plain}</span>
+        <span className={cn("font-display text-lg font-bold", p.tone === "ok" ? "text-foreground" : TONE_CLASSES[p.tone].strong)}>{t(p.plain)}</span>
         <span className="text-muted-foreground">
-          {formatNumber(p.v, channel.decimals)} {channel.unit}
+          {formatNumber(p.v, channel.decimals)} {t(channel.unit)}
         </span>
       </span>
       <span className="border-t pt-1.5 text-xs text-muted-foreground">
         {isNow ? (
           <>
-            <b className="text-foreground">Línea vertical:</b> la medición en vivo. La curva avanza hacia ella cada segundo.
+            <b className="text-foreground">{t("Línea vertical:")}</b> {t("la medición en vivo. La curva avanza hacia ella cada segundo.")}
           </>
         ) : (
           <>
-            <b className="text-foreground">Línea vertical:</b> ahora. Este punto es de antes.
+            <b className="text-foreground">{t("Línea vertical:")}</b> {t("ahora. Este punto es de antes.")}
           </>
         )}
       </span>
       <span className="text-xs text-muted-foreground">
-        <b className="text-warn-strong">Línea punteada:</b> límite de atención ({channel.warn.text}). La zona amarilla es fuera de rango.
+        <b className="text-warn-strong">{t("Línea punteada:")}</b> {t("límite de atención ({limit}). La zona amarilla es fuera de rango.", { limit: t(channel.warn.text) })}
       </span>
     </div>
   );

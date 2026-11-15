@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { formatNumber } from "@/shared/lib/format";
 import { cn } from "@/shared/lib/cn";
+import { t } from "@/shared/i18n";
 import { KM_PER_PX, MAP_IMAGE, ROUTE, ROUTE_LENGTH_PX, SAFE_RADIUS_KM, STOPS, WALK_KMH, distanceAlong, pointAt } from "../domain/route";
 
 const W = 800;
@@ -38,14 +39,14 @@ export function EvaMap({ progress, name }: { progress: number; name: string }) {
 
   return (
     <div className="relative w-full" style={{ aspectRatio: `${W} / ${H}` }}>
-      <svg viewBox={`0 0 ${W} ${H}`} className="absolute inset-0 size-full rounded-lg bg-neutral-900" role="img" aria-label={`Mapa: ${name} en la ruta de la EVA, ${MAP_IMAGE.place}`}>
+      <svg viewBox={`0 0 ${W} ${H}`} className="absolute inset-0 size-full rounded-lg bg-neutral-900" role="img" aria-label={t("Mapa: {name} en la ruta de la EVA, {place}", { name, place: t(MAP_IMAGE.place) })}>
         <image href={MAP_IMAGE.src} x="0" y="0" width={W} height={H} preserveAspectRatio="xMidYMid slice" />
 
         <text x="22" y="470" fontSize="15" fontWeight="700" {...LABEL}>
-          Cráter en sombra permanente
+          {t("Cráter en sombra permanente")}
         </text>
         <text x="22" y="490" fontSize="12" {...LABEL}>
-          Nunca le da el sol: puede guardar hielo
+          {t("Nunca le da el sol: puede guardar hielo")}
         </text>
 
         <circle cx={bx} cy={by} r={safeR} fill="none" stroke="#f59e0b" strokeWidth="2.5" strokeDasharray="8 6" />
@@ -58,7 +59,7 @@ export function EvaMap({ progress, name }: { progress: number; name: string }) {
             key={s.k}
             tabIndex={0}
             role="button"
-            aria-label={`Parada ${s.k + 1}: ${s.task}. ${s.reached ? "Hecha" : `Pendiente, llega en unos ${s.etaMin} minutos`}`}
+            aria-label={`${t("Parada {n}", { n: s.k + 1 })}: ${t(s.task)}. ${s.reached ? t("Hecha") : t("Pendiente, llega en unos {n} minutos", { n: s.etaMin })}`}
             className="cursor-help outline-none"
             onMouseEnter={() => setHover(s.k)}
             onMouseLeave={() => setHover(null)}
@@ -72,7 +73,7 @@ export function EvaMap({ progress, name }: { progress: number; name: string }) {
               {s.k + 1}
             </text>
             <text x={s.x + 18} y={s.y + 5} fontSize="13" fontWeight="600" {...LABEL}>
-              Parada {s.k + 1}
+              {t("Parada {n}", { n: s.k + 1 })}
             </text>
           </g>
         ))}
@@ -80,7 +81,7 @@ export function EvaMap({ progress, name }: { progress: number; name: string }) {
         <rect x={bx - 18} y={by - 18} width="36" height="36" rx="8" fill="#111827" stroke="#fff" strokeWidth="2" />
         <path d={`M${bx - 9} ${by + 8} L${bx - 9} ${by - 2} L${bx} ${by - 10} L${bx + 9} ${by - 2} L${bx + 9} ${by + 8} Z`} fill="none" stroke="#fff" strokeWidth="2.5" />
         <text x={bx} y={by - 26} textAnchor="middle" fontSize="14" fontWeight="700" {...LABEL}>
-          Base
+          {t("Base")}
         </text>
 
         <circle cx={p.x} cy={p.y} r="18" fill="#3b82f6" opacity="0.35" className="animate-live" />
@@ -101,7 +102,7 @@ export function EvaMap({ progress, name }: { progress: number; name: string }) {
       </svg>
 
       <span className="pointer-events-none absolute bottom-2 left-2 rounded bg-black/60 px-2 py-0.5 text-[11px] text-white">
-        {MAP_IMAGE.place} · {MAP_IMAGE.credit}
+        {t(MAP_IMAGE.place)} · {MAP_IMAGE.credit}
       </span>
 
       {active && (
@@ -114,20 +115,20 @@ export function EvaMap({ progress, name }: { progress: number; name: string }) {
             transform: `${active.x > 520 ? "translate(calc(-100% - 22px)," : "translate(22px,"} ${active.y > H / 2 ? "calc(-100% + 12px))" : "-12px)"}`,
           }}
         >
-          <div className="bg-foreground px-3 py-2 font-display font-bold text-background">Parada {active.k + 1}</div>
+          <div className="bg-foreground px-3 py-2 font-display font-bold text-background">{t("Parada {n}", { n: active.k + 1 })}</div>
           <figure className="relative">
             {/* Imagen chica y local: no hace falta next/image. */}
-            <img src={active.image.src} alt={active.image.alt} width={640} height={400} className="aspect-[16/10] w-full bg-muted object-cover" />
+            <img src={active.image.src} alt={t(active.image.alt)} width={640} height={400} className="aspect-[16/10] w-full bg-muted object-cover" />
             <figcaption className="absolute bottom-1 right-1 rounded bg-black/60 px-1.5 py-0.5 text-[10px] text-white">{active.image.credit}</figcaption>
           </figure>
           <div className="flex flex-col gap-1 p-3">
-            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Objetivo</span>
-            <span className="font-semibold">{active.task}</span>
-            <span className="text-sm text-muted-foreground">{active.detail}</span>
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t("Objetivo")}</span>
+            <span className="font-semibold">{t(active.task)}</span>
+            <span className="text-sm text-muted-foreground">{t(active.detail)}</span>
             <span className={cn("text-sm font-semibold", active.reached ? "text-ok-strong" : "text-warn-strong")}>
-              {active.reached ? `Hecha · ${active.minutes} min` : `Pendiente · llega en ~${active.etaMin} min`}
+              {active.reached ? t("Hecha · {n} min", { n: active.minutes }) : t("Pendiente · llega en ~{n} min", { n: active.etaMin })}
             </span>
-            <span className="text-xs text-muted-foreground">{formatNumber(active.fromBaseKm, 2)} km de la base</span>
+            <span className="text-xs text-muted-foreground">{t("{km} km de la base", { km: formatNumber(active.fromBaseKm, 2) })}</span>
           </div>
         </div>
       )}

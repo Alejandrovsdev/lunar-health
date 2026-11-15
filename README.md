@@ -34,6 +34,8 @@ npm run dev        # http://localhost:3000
 
 No hay backend: los datos viven en el navegador. El botón **Reiniciar demo** vuelve a los datos iniciales.
 
+**Idioma:** el selector **ES / EN** del encabezado cambia toda la app, incluida la voz de los tests (usa una voz del sistema en el idioma elegido). Arranca en inglés; la elección queda guardada en el navegador. Para abrirla directamente en español: `http://localhost:3000/?lang=es` (o `?lang=en` para inglés).
+
 ## Recorrido sugerido para la demo (≈ 3 minutos)
 
 1. **Tripulación** (`/`):
@@ -137,9 +139,17 @@ La demo no tiene backend. `core/store.ts` es el **repositorio**: un store de Zus
 - **Legajo:** los datos básicos (altura, peso pre-vuelo, grupo sanguíneo, alergias) son fijos y están en `modules/monitoring/data/profiles.ts`. El peso actual sale del mismo dato que usa Alimentación.
 - **Para conectar un backend:** reemplazar las acciones de los slices por llamadas a una API (o a Server Actions). La UI no cambia porque usa los hooks de cada módulo.
 
+### Idiomas
+
+`src/shared/i18n/` traduce al estilo gettext: el texto en español es la clave (`t("Texto")`) y `en.ts` tiene el inglés.
+
+- Los textos fijos del dominio (parámetros, estudios, comidas) quedan en español y se traducen donde se muestran.
+- Lo que se guarda en el navegador (resultados, registro de la esclusa) también se guarda en español; al mostrarlo se traduce, incluso si tiene números, con claves que llevan `{variables}`.
+- En desarrollo, la consola avisa cada texto sin traducción.
+
 ### Agregar cosas
 
-- **Un parámetro:** sumarlo a `modules/monitoring/domain/parameters.ts` (umbrales, textos, fuente), a la semilla y a [docs/umbrales-y-fuentes.md](docs/umbrales-y-fuentes.md).
+- **Un parámetro:** sumarlo a `modules/monitoring/domain/parameters.ts` (umbrales, textos, fuente), a la semilla, a [docs/umbrales-y-fuentes.md](docs/umbrales-y-fuentes.md) y sus textos a `shared/i18n/en.ts`.
 - **Un test:** definirlo en `modules/assessments/domain/catalog.ts`, crear su componente en `ui/tests/` y registrarlo en `ui/test-runner.tsx`.
 - **Una regla de la esclusa:** `modules/airlock/domain/rules.ts`.
 

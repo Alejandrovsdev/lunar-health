@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { cn } from "@/shared/lib/cn";
+import { t } from "@/shared/i18n";
 import { formatNumber } from "@/shared/lib/format";
 import { StatusPill } from "@/shared/components/status";
 import { SEX_LABEL, ageIn, bmi, bmiStatus, massChange } from "../domain/anthropometrics";
@@ -20,23 +21,23 @@ export function AstronautFacts({ astronaut: a }: { astronaut: Astronaut }) {
   const sign = change.pct > 0 ? "+" : "";
 
   return (
-    <dl aria-label="Datos básicos" className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border bg-border sm:grid-cols-4 xl:grid-cols-[repeat(3,minmax(0,0.7fr))_minmax(0,1.6fr)_repeat(2,minmax(0,0.8fr))_minmax(0,1.2fr)]">
-      <Fact label="Sexo">{SEX_LABEL[a.sex]}</Fact>
-      <Fact label="Edad">{ageIn(p.birthYear)} años</Fact>
-      <Fact label="Altura">{p.heightCm} cm</Fact>
-      <Fact label="Peso actual" detail={`Pre-vuelo: ${formatNumber(p.preflightMassKg, 1)} kg · ${sign}${formatNumber(change.pct, 1)} %`}>
+    <dl aria-label={t("Datos básicos")} className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border bg-border sm:grid-cols-4 xl:grid-cols-[repeat(3,minmax(0,0.7fr))_minmax(0,1.6fr)_repeat(2,minmax(0,0.8fr))_minmax(0,1.2fr)]">
+      <Fact label={t("Sexo")}>{t(SEX_LABEL[a.sex])}</Fact>
+      <Fact label={t("Edad")}>{t("{n} años", { n: ageIn(p.birthYear) })}</Fact>
+      <Fact label={t("Altura")}>{p.heightCm} cm</Fact>
+      <Fact label={t("Peso actual")} detail={t("Pre-vuelo: {kg} kg · {pct} %", { kg: formatNumber(p.preflightMassKg, 1), pct: `${sign}${formatNumber(change.pct, 1)}` })}>
         <span className="flex flex-wrap items-center gap-2">
           {formatNumber(a.massKg, 1)} kg
           <StatusPill tone={change.tone} label={change.plain} />
         </span>
       </Fact>
-      <Fact label="IMC" detail={imcStatus.plain} detailTone={imcStatus.tone}>
+      <Fact label={t("IMC")} detail={t(imcStatus.plain)} detailTone={imcStatus.tone}>
         {formatNumber(imc, 1)}
       </Fact>
-      <Fact label="Grupo sanguíneo">{p.bloodType}</Fact>
+      <Fact label={t("Grupo sanguíneo")}>{p.bloodType}</Fact>
       {/* 7 datos: en 2 y 4 columnas, Alergias completa la última fila (sin celdas vacías). */}
-      <Fact label="Alergias" highlight={p.allergies.length > 0} className="col-span-2 xl:col-span-1">
-        {p.allergies.length ? p.allergies.join(", ") : <span className="font-normal text-muted-foreground">Sin alergias conocidas</span>}
+      <Fact label={t("Alergias")} highlight={p.allergies.length > 0} className="col-span-2 xl:col-span-1">
+        {p.allergies.length ? p.allergies.map((x) => t(x)).join(", ") : <span className="font-normal text-muted-foreground">{t("Sin alergias conocidas")}</span>}
       </Fact>
     </dl>
   );
@@ -72,5 +73,5 @@ function Fact({
 export function basicFactsLine(a: Astronaut): string | null {
   const p = getBasicProfile(a.id);
   if (!p) return null;
-  return `${SEX_LABEL[a.sex]} · ${ageIn(p.birthYear)} años · ${formatNumber(a.massKg, 0)} kg`;
+  return `${t(SEX_LABEL[a.sex])} · ${t("{n} años", { n: ageIn(p.birthYear) })} · ${formatNumber(a.massKg, 0)} kg`;
 }

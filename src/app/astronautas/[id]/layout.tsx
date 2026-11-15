@@ -4,6 +4,7 @@ import { use, type ReactNode } from "react";
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/shared/components/page-header";
 import { LiveBadge } from "@/shared/components/status";
+import { t } from "@/shared/i18n";
 import { AstronautFacts, AstronautNav, LOCATION_LABEL, useAstronaut } from "@/modules/monitoring";
 import { usePendingTestsCount } from "@/modules/assessments";
 
@@ -26,7 +27,7 @@ export default function AstronautLayout({ children, params }: { children: ReactN
         }
         right={
           <span className="rounded-full bg-secondary px-4 py-2 text-sm font-semibold text-secondary-foreground">
-            {LOCATION_LABEL[astronaut.location].detail} · {astronaut.role}
+            {t(LOCATION_LABEL[astronaut.location].detail)} · {t(astronaut.role)}
           </span>
         }
       />

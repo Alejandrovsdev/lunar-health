@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/shared/lib/cn";
+import { t } from "@/shared/i18n";
 import type { Location } from "../domain/types";
 
 /**
@@ -28,7 +29,7 @@ export function AstronautNav({ astronautId, location, pendingTests }: { astronau
           { href: `${base}/evolucion`, label: "Evolución" },
         ];
   return (
-    <nav aria-label="Secciones de la ficha" className="flex flex-wrap items-center gap-3 border-b">
+    <nav aria-label={t("Secciones de la ficha")} className="flex flex-wrap items-center gap-3 border-b">
       <div className="-mb-px flex min-w-0 flex-1 gap-1 overflow-x-auto">
         {links.map((l) => {
           const active = path === l.href;
@@ -42,7 +43,7 @@ export function AstronautNav({ astronautId, location, pendingTests }: { astronau
                 active ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:border-input hover:text-foreground",
               )}
             >
-              {l.label}
+              {t(l.label)}
             </Link>
           );
         })}
@@ -52,8 +53,8 @@ export function AstronautNav({ astronautId, location, pendingTests }: { astronau
           href={`/tests/${astronautId}`}
           className="mb-2 flex min-h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
         >
-          Tests de hoy
-          {pendingTests > 0 && <span className="rounded-full bg-card px-2 py-0.5 text-xs text-primary">{pendingTests} pendientes</span>}
+          {t("Tests de hoy")}
+          {pendingTests > 0 && <span className="rounded-full bg-card px-2 py-0.5 text-xs text-primary">{t("{n} pendientes", { n: pendingTests })}</span>}
         </Link>
       )}
     </nav>

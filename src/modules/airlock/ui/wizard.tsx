@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from "react";
 import { cn } from "@/shared/lib/cn";
 import { Button } from "@/shared/ui/button";
+import { t, tx } from "@/shared/i18n";
 
 export interface WizardStep {
   id: string;
@@ -23,7 +24,7 @@ export function Wizard({ steps, finish }: { steps: WizardStep[]; finish: ReactNo
 
   return (
     <div className="grid gap-6 lg:grid-cols-[380px_1fr]">
-      <nav aria-label="Pasos" className="flex flex-col gap-2 rounded-2xl border bg-card p-4">
+      <nav aria-label={t("Pasos")} className="flex flex-col gap-2 rounded-2xl border bg-card p-4">
         {steps.map((s, k) => {
           const done = k < i && s.valid;
           return (
@@ -46,7 +47,7 @@ export function Wizard({ steps, finish }: { steps: WizardStep[]; finish: ReactNo
               >
                 {done ? "✓" : k + 1}
               </span>
-              <span className="font-semibold">{s.title}</span>
+              <span className="font-semibold">{tx(s.title)}</span>
             </button>
           );
         })}
@@ -55,21 +56,21 @@ export function Wizard({ steps, finish }: { steps: WizardStep[]; finish: ReactNo
       <section aria-live="polite" className="flex min-h-[560px] flex-col gap-5 rounded-2xl border bg-card p-6 lg:p-8">
         <div className="flex flex-col gap-1">
           <span className="text-sm font-semibold uppercase tracking-wider text-primary">
-            Paso {i + 1} de {steps.length}
+            {t("Paso {n} de {total}", { n: i + 1, total: steps.length })}
           </span>
-          <h2 className="text-3xl font-bold">{step.title}</h2>
-          <p className="text-base text-muted-foreground">{step.subtitle}</p>
+          <h2 className="text-3xl font-bold">{tx(step.title)}</h2>
+          <p className="text-base text-muted-foreground">{tx(step.subtitle)}</p>
         </div>
         <div className="flex flex-col gap-4">{step.content}</div>
         <div className="mt-auto flex items-center justify-between gap-3 pt-4">
           <Button variant="outline" size="lg" disabled={i === 0} onClick={() => setI(i - 1)}>
-            Anterior
+            {t("Anterior")}
           </Button>
           {isLast ? (
             finish
           ) : (
             <Button size="lg" disabled={!step.valid} onClick={() => setI(i + 1)}>
-              {step.valid ? "Siguiente" : "Completá este paso"}
+              {step.valid ? t("Siguiente") : t("Completá este paso")}
             </Button>
           )}
         </div>

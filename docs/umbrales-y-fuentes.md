@@ -21,7 +21,7 @@ Código: [`src/modules/monitoring/domain/parameters.ts`](../src/modules/monitori
 | Pulso en reposo | 60 a 100 lpm | 50 a 59 o 101 a 120 lpm | menos de 50 o más de 120 lpm | Referencia clínica general |
 | Temperatura | 36,1 a 37,2 °C | 35 a 36,0 o 37,3 a 37,9 °C | menos de 35 o 38 °C o más | Referencia clínica general · riesgo HRP: sistema inmune |
 | Oxígeno en sangre | 95 % o más | 90 a 94 % | menos de 90 % | Referencia clínica general · riesgo HRP: hipoxia (hábitat a 8,2 psi) |
-| Test cognitivo (PVT) | menos de 300 ms y 0 o 1 lapsos | 300 a 359 ms o 2 lapsos | 360 ms o más, o 3 lapsos o más | NASA Standard Measures: Cognition (PVT) · umbrales de ejemplo |
+| Test cognitivo (PVT, 10 intentos) | menos de 300 ms y 0 o 1 errores | 300 a 359 ms, o 2 o 3 errores | 360 ms o más, o 4 errores o más | NASA Standard Measures: Cognition · criterios del PVT-B (Basner et al., 2011): lapso = más de 355 ms, falso inicio = antes del estímulo o en menos de 100 ms. Errores = lapsos + falsos inicios |
 | Hidratación | 2.000 mL o más por día | por debajo de lo esperable a esa hora, o 75 % a 99 % al cierre del día | menos del 75 % al cierre | NASA-STD-3001: requerimientos nutricionales (líquidos ≥ 2.000 mL/día) |
 | Alimentación | 90 % a 125 % de la meta de calorías | atrasada, o más del 125 % | menos del 75 % al cierre | NASA-STD-3001 · meta de energía con las ecuaciones de la OMS |
 | Estrés percibido (PSS-14, mensual) | 0 a 18 | 19 a 37 | 38 a 56 | Cohen, Kamarck & Mermelstein (1983), adaptación de E. Remor |

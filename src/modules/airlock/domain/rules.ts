@@ -1,9 +1,12 @@
 import { worstTone, type Tone } from "@/shared/domain/status";
+import { t } from "@/shared/i18n";
 import { PARAMETERS } from "@/modules/monitoring/domain";
 import type { AirlockVerdict, CheckInForm, CheckOutForm, Finding, VitalsInput } from "./types";
 
 /**
  * Reglas de la esclusa. Son propuestas para la demo y deben validarse con el equipo médico.
+ * Idioma: los hallazgos se arman al mostrar el veredicto (se traducen sus partes); título y texto quedan en
+ * español porque se guardan en el registro, y se traducen donde se muestran.
  * Fuentes: riesgos HRP (descompresión, EVA, hipoxia) y los umbrales de la base (docs/umbrales-y-fuentes.md).
  */
 
@@ -13,7 +16,7 @@ function vitalsFindings(v: VitalsInput): Finding[] {
     if (value === "") return;
     const def = PARAMETERS[id];
     const ev = def.evaluate({ id: "", astronautId: "", parameterId: id, value: Number(value), at: "", source: "esclusa" });
-    if (ev.tone !== "ok") out.push({ tone: ev.tone, text: `${def.label}: ${ev.plain.toLowerCase()}` });
+    if (ev.tone !== "ok") out.push({ tone: ev.tone, text: `${t(def.label)}: ${t(ev.plain).toLowerCase()}` });
   };
   check("spo2", v.spo2);
   check("restingHr", v.restingHr);
@@ -28,7 +31,7 @@ function vitalsFindings(v: VitalsInput): Finding[] {
       at: "",
       source: "esclusa",
     });
-    if (ev.tone !== "ok") out.push({ tone: ev.tone, text: `Presión arterial: ${ev.plain.toLowerCase()}` });
+    if (ev.tone !== "ok") out.push({ tone: ev.tone, text: `${t("Presión arterial")}: ${t(ev.plain).toLowerCase()}` });
   }
   return out;
 }
@@ -43,7 +46,7 @@ export function evaluateCheckOut(f: CheckOutForm): AirlockVerdict {
   add(f.nausea === true, "warn", "Náuseas o visión borrosa");
   add(f.jointPain === true, "bad", "Dolor en articulaciones antes de salir");
   findings.push(...vitalsFindings(f));
-  if (f.pvt && f.pvt.tone !== "ok") findings.push({ tone: f.pvt.tone, text: `Test cognitivo: ${f.pvt.plain.toLowerCase()}` });
+  if (f.pvt && f.pvt.tone !== "ok") findings.push({ tone: f.pvt.tone, text: `${t("Test cognitivo")}: ${t(f.pvt.plain).toLowerCase()}` });
   add(f.balanceStable === false, "warn", "Equilibrio inestable");
   add(f.leakTestOk === false, "bad", "El traje no pasó la prueba de fuga");
   add(f.consumablesFull === false, "bad", "Oxígeno, batería o agua incompletos");
@@ -83,7 +86,7 @@ export function dustLevel(f: CheckInForm): number {
 export function evaluateCheckIn(f: CheckInForm): AirlockVerdict {
   const findings: Finding[] = [];
   const dcs = decompressionCount(f);
-  if (dcs > 0) findings.push({ tone: "bad", text: `${dcs} síntoma(s) de descompresión` });
+  if (dcs > 0) findings.push({ tone: "bad", text: t("{n} síntoma(s) de descompresión", { n: dcs }) });
   if (f.eyes === 2) findings.push({ tone: "bad", text: "Ojos muy irritados por polvo" });
   if (f.eyes === 1) findings.push({ tone: "warn", text: "Ojos un poco irritados por polvo" });
   if (f.cough) findings.push({ tone: "warn", text: "Tos o garganta irritada" });

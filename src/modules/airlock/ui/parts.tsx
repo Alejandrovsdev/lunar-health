@@ -5,6 +5,7 @@ import { TONE_CLASSES } from "@/shared/domain/status";
 import { StatusDot } from "@/shared/components/status";
 import { EscalationLadder } from "@/shared/components/escalation-ladder";
 import { NumberField } from "@/shared/ui/form";
+import { tx } from "@/shared/i18n";
 import type { AirlockVerdict, VitalsInput } from "../domain/types";
 
 /** `idPrefix` evita ids repetidos cuando hay dos formularios en pantalla (check-in del equipo). */
@@ -25,8 +26,8 @@ export function VerdictPanel({ verdict }: { verdict: AirlockVerdict }) {
   return (
     <div className="flex flex-col gap-4">
       <div className={cn("flex flex-col gap-2 rounded-2xl p-6", c.soft)}>
-        <span className={cn("font-display text-4xl font-bold", verdict.tone === "ok" ? "text-ok-strong" : c.strong)}>{verdict.title}</span>
-        <span className="text-lg">{verdict.text}</span>
+        <span className={cn("font-display text-4xl font-bold", verdict.tone === "ok" ? "text-ok-strong" : c.strong)}>{tx(verdict.title)}</span>
+        <span className="text-lg">{tx(verdict.text)}</span>
         <EscalationLadder level={verdict.escalation} />
       </div>
       {verdict.findings.length > 0 && (
@@ -34,7 +35,7 @@ export function VerdictPanel({ verdict }: { verdict: AirlockVerdict }) {
           {verdict.findings.map((f) => (
             <li key={f.text} className="flex items-center gap-3 rounded-lg bg-muted px-4 py-3">
               <StatusDot tone={f.tone} className="size-3" />
-              <span className="text-base">{f.text}</span>
+              <span className="text-base">{tx(f.text)}</span>
             </li>
           ))}
         </ul>

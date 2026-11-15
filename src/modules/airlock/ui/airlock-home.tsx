@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useAppStore } from "@/core/store";
-import { formatNumber, formatTime } from "@/shared/lib/format";
+import { formatNumber, formatTime, formatWeekdayTime } from "@/shared/lib/format";
+import { t } from "@/shared/i18n";
 import { Button } from "@/shared/ui/button";
 import { StatusPill } from "@/shared/components/status";
 import { CrewAvatar } from "@/shared/components/avatar";
@@ -24,7 +25,7 @@ export function AirlockHome() {
     <div className="flex flex-col gap-6">
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="flex flex-col gap-4 rounded-3xl border bg-card p-8">
-          <span className="text-sm font-semibold uppercase tracking-wider text-primary">Salir de la base</span>
+          <span className="text-sm font-semibold uppercase tracking-wider text-primary">{t("Salir de la base")}</span>
           <h2 className="text-4xl font-bold">Check-out</h2>
           <div className="flex flex-col gap-2">
             {scheduledFirst(inside).map((a) => (
@@ -34,12 +35,12 @@ export function AirlockHome() {
                   <span className="flex flex-col">
                     <span className="text-lg font-semibold">{a.name}</span>
                     <span className="text-sm text-muted-foreground">
-                      {a.nextEva ? `Salida programada ${new Date(a.nextEva.at).toLocaleString("es-AR", { weekday: "short", hour: "2-digit", minute: "2-digit" })}` : a.role}
+                      {a.nextEva ? t("Salida programada {when}", { when: formatWeekdayTime(a.nextEva.at) }) : t(a.role)}
                     </span>
                   </span>
                 </span>
                 <Button asChild size="lg" variant={a.nextEva ? "default" : "outline"}>
-                  <Link href={`/esclusa/check-out/${a.id}`}>Empezar check-out</Link>
+                  <Link href={`/esclusa/check-out/${a.id}`}>{t("Empezar check-out")}</Link>
                 </Button>
               </div>
             ))}
@@ -48,10 +49,10 @@ export function AirlockHome() {
         </section>
 
         <section className="flex flex-col gap-4 rounded-3xl border bg-card p-8">
-          <span className="text-sm font-semibold uppercase tracking-wider text-primary">Entrar a la base</span>
+          <span className="text-sm font-semibold uppercase tracking-wider text-primary">{t("Entrar a la base")}</span>
           <h2 className="text-4xl font-bold">Check-in</h2>
           <div className="flex flex-col gap-2">
-            {teams.length === 0 && <p className="rounded-xl bg-muted px-4 py-3 text-muted-foreground">No hay nadie en EVA: no hay check-in pendiente.</p>}
+            {teams.length === 0 && <p className="rounded-xl bg-muted px-4 py-3 text-muted-foreground">{t("No hay nadie en EVA: no hay check-in pendiente.")}</p>}
             {teams.map((team) => (
               <TeamRow key={team[0].id} team={team} />
             ))}
@@ -62,7 +63,7 @@ export function AirlockHome() {
 
       {log.length > 0 && (
         <section className="flex flex-col gap-2">
-          <h2 className="font-sans text-xs font-semibold uppercase tracking-wider text-muted-foreground">Registro de la esclusa</h2>
+          <h2 className="font-sans text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t("Registro de la esclusa")}</h2>
           {log
             .slice()
             .reverse()
@@ -71,12 +72,12 @@ export function AirlockHome() {
                 <span className="w-16 text-muted-foreground">{formatTime(r.at)}</span>
                 <span className="w-24 font-semibold">{r.kind === "check-out" ? "Check-out" : "Check-in"}</span>
                 <span className="w-32">{astronauts.find((a) => a.id === r.astronautId)?.name}</span>
-                <StatusPill tone={r.verdict.tone} label={r.verdict.title} />
+                <StatusPill tone={r.verdict.tone} label={t(r.verdict.title)} />
               </div>
             ))}
         </section>
       )}
-      <p className="text-sm text-muted-foreground">Los resultados del check-in pasan a la ficha del astronauta en la base como seguimiento post-salida.</p>
+      <p className="text-sm text-muted-foreground">{t("Los resultados del check-in pasan a la ficha del astronauta en la base como seguimiento post-salida.")}</p>
     </div>
   );
 }
@@ -90,11 +91,11 @@ function scheduledFirst(list: Astronaut[]) {
 function StepList({ steps }: { steps: string[] }) {
   return (
     <div className="mt-auto flex flex-col gap-2 border-t pt-4">
-      <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{steps.length} pasos · se guían uno por uno</span>
+      <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t("{n} pasos · se guían uno por uno", { n: steps.length })}</span>
       <ol className="flex flex-wrap gap-1.5">
         {steps.map((s, i) => (
           <li key={s} className="rounded-full bg-muted px-2.5 py-1 text-xs">
-            <span className="font-semibold text-muted-foreground">{i + 1}.</span> {s}
+            <span className="font-semibold text-muted-foreground">{i + 1}.</span> {t(s)}
           </li>
         ))}
       </ol>
@@ -115,14 +116,14 @@ function TeamRow({ team }: { team: Astronaut[] }) {
           ))}
         </span>
         <span className="flex flex-col">
-          <span className="text-lg font-semibold">{team.map((a) => a.name).join(" y ")}</span>
+          <span className="text-lg font-semibold">{team.map((a) => a.name).join(t(" y "))}</span>
           <Link href={`/astronautas/${lead.id}/mapa`} className="text-sm font-semibold text-primary hover:underline">
-            En EVA · a {live ? formatNumber(live.position.distanceKm, 2) : "—"} km de la base →
+            {t("En EVA · a {km} km de la base →", { km: live ? formatNumber(live.position.distanceKm, 2) : "—" })}
           </Link>
         </span>
       </span>
       <Button asChild size="lg">
-        <Link href={`/esclusa/check-in/${lead.id}`}>{team.length > 1 ? "Check-in del equipo" : "Empezar check-in"}</Link>
+        <Link href={`/esclusa/check-in/${lead.id}`}>{team.length > 1 ? t("Check-in del equipo") : t("Empezar check-in")}</Link>
       </Button>
     </div>
   );

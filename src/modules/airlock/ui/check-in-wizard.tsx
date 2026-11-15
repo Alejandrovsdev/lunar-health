@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAppStore } from "@/core/store";
 import { cn } from "@/shared/lib/cn";
 import { formatDuration, formatNumber } from "@/shared/lib/format";
+import { t } from "@/shared/i18n";
 import { Button } from "@/shared/ui/button";
 import { ChoiceGroup, NumberField, YesNo } from "@/shared/ui/form";
 import { PlainValue, StatusPill } from "@/shared/components/status";
@@ -67,7 +68,7 @@ export function CheckInWizard({ astronautId }: { astronautId: string }) {
     {
       id: "summary",
       title: "Resumen de la salida",
-      subtitle: `${names} · ${lead.eva?.destination ?? ""}`,
+      subtitle: `${names} · ${t(lead.eva?.destination ?? "")}`,
       valid: true,
       content: leadSnap && pos && (
         <>
@@ -208,7 +209,7 @@ export function CheckInWizard({ astronautId }: { astronautId: string }) {
             router.push(team.length > 1 ? "/" : `/astronautas/${lead.id}`);
           }}
         >
-          {team.length > 1 ? "Confirmar ingreso del equipo" : "Confirmar ingreso"}
+          {team.length > 1 ? t("Confirmar ingreso del equipo") : t("Confirmar ingreso")}
         </Button>
       }
     />
@@ -238,7 +239,7 @@ function MemberBlocks({
             <CrewAvatar name={a.name} photo={a.photo} tone="info" className="size-12 ring-2 ring-offset-1" />
             <span className="flex flex-col">
               <span className="font-display text-lg font-semibold">{a.name}</span>
-              <span className="text-sm text-muted-foreground">{a.role}</span>
+              <span className="text-sm text-muted-foreground">{t(a.role)}</span>
             </span>
             {badge && <span className="ml-auto">{badge(a)}</span>}
           </header>

@@ -2,6 +2,7 @@
 
 import { PlainValue, StatusDot } from "@/shared/components/status";
 import { formatTime } from "@/shared/lib/format";
+import { t } from "@/shared/i18n";
 import type { ParameterId } from "../domain/types";
 import { useHealthSummary } from "./hooks";
 import { SOURCE_LABEL } from "./source-label";
@@ -21,13 +22,13 @@ export function VitalsGrid({ astronautId }: { astronautId: string }) {
             {s.label}
             <StatusDot tone={s.tone} />
           </span>
-          <PlainValue tone={s.tone} plain={s.plain} detail={`${s.detail} · normal: ${s.normalText}`} size="lg" />
+          <PlainValue tone={s.tone} plain={s.plain} detail={`${s.detail} · ${t("normal: {range}", { range: s.normalText })}`} size="lg" />
           <div className="rounded-lg bg-muted">
             <TrendChart status={s} height={90} compact />
           </div>
           {s.latest && (
             <span className="text-xs text-muted-foreground">
-              Último: {formatTime(s.latest.at)} · {SOURCE_LABEL[s.latest.source]}
+              {t("Último: {time} · {source}", { time: formatTime(s.latest.at), source: t(SOURCE_LABEL[s.latest.source]) })}
             </span>
           )}
         </article>

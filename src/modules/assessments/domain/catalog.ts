@@ -26,12 +26,12 @@ export const TESTS: TestDefinition[] = [
   {
     id: "pvt",
     title: "Test cognitivo",
-    description: "Atención y reflejos: tocá el círculo cuando se ponga verde. 5 intentos.",
+    description: "Atención y reflejos: tocá el círculo cuando se ponga verde. 10 intentos.",
     minutes: 1,
     frequency: "daily",
     frequencyLabel: "Todos los días",
     category: "cognitivo",
-    nasaReference: "Standard Measures · Cognition (PVT: lapsos de más de 335 ms y falsos inicios)",
+    nasaReference: "Standard Measures · Cognition (PVT-B: lapsos de más de 355 ms y falsos inicios)",
   },
   {
     id: "weekly",

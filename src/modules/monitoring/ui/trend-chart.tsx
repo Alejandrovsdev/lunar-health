@@ -5,6 +5,7 @@ import { cn } from "@/shared/lib/cn";
 import { TONE_CLASSES, TONE_HEX } from "@/shared/domain/status";
 import { StatusDot } from "@/shared/components/status";
 import { formatDay, formatTime } from "@/shared/lib/format";
+import { t } from "@/shared/i18n";
 import { PARAMETERS, type ParameterDefinition } from "../domain/parameters";
 import type { ParameterStatus, Reading } from "../domain/types";
 
@@ -17,7 +18,7 @@ export function TrendChart({ status, height = 200, compact = false }: { status: 
   const color = status.tone === "ok" ? "#1d4ed8" : TONE_HEX[status.tone];
   const gid = `g-${status.id}-${compact ? "c" : "f"}`;
   return (
-    <div style={{ height }} role="img" aria-label={`${status.label}: ${status.plain}. Evolución de los últimos días.`}>
+    <div style={{ height }} role="img" aria-label={`${status.label}: ${status.plain}. ${t("Evolución de los últimos días.")}`}>
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: compact ? 8 : 0 }}>
           <defs>
@@ -79,11 +80,11 @@ function TrendTooltip({ active, payload, def }: TooltipProps & { def: ParameterD
       </span>
       <span className="flex items-center gap-2">
         <StatusDot tone={ev.tone} />
-        <span className={cn("font-display text-base font-bold", ev.tone === "ok" ? "text-foreground" : TONE_CLASSES[ev.tone].strong)}>{ev.plain}</span>
+        <span className={cn("font-display text-base font-bold", ev.tone === "ok" ? "text-foreground" : TONE_CLASSES[ev.tone].strong)}>{t(ev.plain)}</span>
         <span className="text-muted-foreground">{def.format(p.r)}</span>
       </span>
       <span className="border-t pt-1 text-xs text-muted-foreground">
-        <b className="text-ok-strong">Franja verde:</b> normal ({def.normalText})
+        <b className="text-ok-strong">{t("Franja verde:")}</b> {t("normal ({range})", { range: t(def.normalText) })}
       </span>
     </div>
   );
